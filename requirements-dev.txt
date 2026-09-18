@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest
+ruff
+scikit-learn
+skrub
+skore

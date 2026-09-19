@@ -123,8 +123,10 @@ class Repository:
             ).fetchone()
             if row is None:
                 raise KeyError(record_id)
-            if row["status"] != "completed":
-                raise ValueError("Only completed records can be reviewed")
+            if row["status"] not in {"completed", "awaiting_review"}:
+                raise ValueError("Only completed or imported records can be reviewed")
+            if row["status"] == "awaiting_review" and review.corrected_analysis:
+                raise ValueError("Tier-1 candidates have no VLM analysis to correct")
             db.execute(
                 "INSERT INTO reviews (record_id, created_at, payload) VALUES (?, ?, ?)",
                 (record_id, now(), review.model_dump_json()),

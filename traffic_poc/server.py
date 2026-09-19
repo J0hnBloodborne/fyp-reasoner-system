@@ -17,6 +17,7 @@ STATIC = Path(__file__).parent / "static"
 RECORD_ROUTE = re.compile(
     r"/api/records/([a-f0-9]{32})(?:/(image|original|export|review))?"
 )
+FRAME_ROUTE = re.compile(r"/api/records/([a-f0-9]{32})/frames/([1-9][0-9]{0,8})")
 logger = logging.getLogger(__name__)
 
 
@@ -114,6 +115,28 @@ class Handler(BaseHTTPRequestHandler):
                 )
             elif path == "/api/records":
                 self._json(200, pipeline.repository.list_recent())
+            elif match := FRAME_ROUTE.fullmatch(path):
+                record_id, frame_index = match.groups()
+                record = pipeline.repository.get(record_id)
+                event = record.get("tier1_event") or {}
+                frame = next(
+                    (
+                        item
+                        for item in event.get("frames", [])
+                        if item["frame_index"] == int(frame_index)
+                    ),
+                    None,
+                )
+                if frame is None:
+                    self._json(404, {"error": "Evidence frame not found"})
+                else:
+                    filename = (
+                        f"{record_id}.original"
+                        if frame["role"] == "trigger"
+                        else f"{record_id}.frame-{frame['frame_index']:06d}.original"
+                    )
+                    file = pipeline.settings.data_dir / "evidence" / filename
+                    self._send(200, file.read_bytes(), frame["media_type"])
             elif match := RECORD_ROUTE.fullmatch(path):
                 record_id, action = match.groups()
                 record = pipeline.repository.get(record_id)

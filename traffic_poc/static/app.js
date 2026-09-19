@@ -38,18 +38,54 @@ async function recent() {
 }
 
 function render(record) {
+  const imported = record.source === "tier1_bundle";
   $("record").hidden = false;
   $("status").textContent = `${record.filename} · ${record.status}${record.error ? " · " + record.error : ""}`;
-  $("analysis").textContent = record.analysis ? asJSON(record.analysis) : "Waiting for a validated analysis…";
+  $("analysis").textContent = imported
+    ? "Unverified Tier-1 candidate. No VLM analysis has been run for this event."
+    : record.analysis ? asJSON(record.analysis) : "Waiting for a validated analysis…";
   const e = record.evidence;
-  $("dimensions").textContent = `Original: ${e.width}×${e.height}; model input: ${e.model_width}×${e.model_height}.`;
-  $("raw").textContent = record.raw_response || "No model response yet.";
+  $("dimensions").textContent = imported
+    ? `Evidence: ${e.width}×${e.height}; model copy prepared but not analyzed.`
+    : `Original: ${e.width}×${e.height}; model input: ${e.model_width}×${e.model_height}.`;
+  $("raw").textContent = imported ? "No VLM run for this event." : record.raw_response || "No model response yet.";
+  $("caveat").textContent = imported
+    ? "Tier-1 heuristic values are not calibrated probabilities. A still frame cannot establish travel direction or collision timing."
+    : "Confidence is model-reported and uncalibrated. A still image cannot establish direction or signal-crossing history.";
   $("provenance").textContent = asJSON(record.provenance);
   $("reviews").textContent = record.reviews.length ? asJSON(record.reviews) : "Not reviewed.";
-  $("review").hidden = record.status !== "completed";
-  $("timing").textContent = record.provenance
+  $("review").hidden = !["completed", "awaiting_review"].includes(record.status);
+  $("approve").textContent = imported ? "Confirm candidate" : "Confirm record";
+  $("reject").textContent = imported ? "Reject candidate" : "Reject record";
+  $("correct-label").hidden = imported;
+  if (imported) { $("correct").checked = false; $("correction").hidden = true; }
+  $("timing").textContent = imported
+    ? "Imported trigger only; Tier-1 measurements are not calibrated probabilities."
+    : record.provenance
     ? `Inference: ${record.provenance.inference_seconds}s · peak torch allocation: ${record.provenance.peak_allocated_mib} MiB`
     : "First analysis may include model loading or downloading.";
+  $("tier1").hidden = !imported;
+  $("tier1frames").replaceChildren();
+  if (imported) {
+    const event = record.tier1_event;
+    $("tier1meta").textContent = asJSON({
+      source_video: event.source_video, camera_type: event.camera_type,
+      trigger_type: event.trigger_type, trigger_frame: event.trigger_frame,
+      target_id: event.target_id, heuristic_value: event.heuristic_value,
+      evidence_origin: event.evidence_origin
+    });
+    for (const frame of event.frames) {
+      const figure = document.createElement("figure");
+      const img = document.createElement("img");
+      img.src = `/api/records/${record.id}/frames/${frame.frame_index}`;
+      img.alt = `Tier-1 ${frame.role} frame ${frame.frame_index}`;
+      img.loading = "lazy";
+      const caption = document.createElement("figcaption");
+      caption.textContent = `Frame ${frame.frame_index} · ${frame.role}`;
+      figure.append(img, caption);
+      $("tier1frames").append(figure);
+    }
+  }
   if (record.status === "completed" && !$("correct").checked) $("correction").value = asJSON(record.analysis);
 }
 

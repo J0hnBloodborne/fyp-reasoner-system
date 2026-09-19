@@ -38,13 +38,18 @@ class Evidence:
 
 
 def ingest_image(encoded: str, record_id: str, settings: Settings) -> Evidence:
-    """Decode one still image, preserve its bytes, and create an EXIF-oriented RGB PNG."""
+    """Decode an HTTP upload and pass its original bytes to evidence ingestion."""
     if len(encoded) > ((settings.max_upload_bytes + 2) // 3) * 4:
         raise ValueError("Image exceeds the 12 MiB upload limit")
     try:
         data = base64.b64decode(encoded, validate=True)
     except (ValueError, base64.binascii.Error) as exc:
         raise ValueError("Invalid base64 image") from exc
+    return ingest_bytes(data, record_id, settings)
+
+
+def decode_image(data: bytes, settings: Settings) -> Image.Image:
+    """Validate a still image and return its EXIF-oriented RGB pixels."""
     if not data or len(data) > settings.max_upload_bytes:
         raise ValueError("Image is empty or exceeds the upload limit")
     try:
@@ -66,6 +71,12 @@ def ingest_image(encoded: str, record_id: str, settings: Settings) -> Evidence:
         Image.DecompressionBombWarning,
     ) as exc:
         raise ValueError("Image is invalid or too large to decode safely") from exc
+    return image
+
+
+def ingest_bytes(data: bytes, record_id: str, settings: Settings) -> Evidence:
+    """Preserve original bytes and create review/model copies of one still image."""
+    image = decode_image(data, settings)
     width, height = image.size
     directory = settings.data_dir / "evidence"
     directory.mkdir(parents=True, exist_ok=True)

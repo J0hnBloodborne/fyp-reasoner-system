@@ -1,9 +1,10 @@
 # Traffic evidence proof of concept
 
-Manually upload a traffic image, analyze it using a local PyTorch VLM, and review
-the resulting structured record. The initial checks are **no helmet** and
-**triple riding**. No training, camera feed, detector, tracking, or automatic
-notice issuance is included in this baseline.
+Manually upload a traffic image for local PyTorch VLM analysis, or import a
+Tier-1 detector event bundle for human review. The VLM currently checks only
+**no helmet** and **triple riding** on still images. Imported detector events
+are **not** passed through the VLM yet. No training, live camera feed, or
+automatic notice issuance is included.
 
 ## Setup
 
@@ -81,6 +82,8 @@ prototype, not a production enforcement or audit system.
 manual upload → evidence ingestion → bounded job worker → Reasoner adapter
                                                            ↓
 human review ← SQLite record ← schema validation ← raw output + provenance
+
+Tier-1 ZIP bundle → verified event/evidence importer → unverified review record
 ```
 
 - `schemas.py`: versioned inference and review contracts; unsupported fields and
@@ -92,6 +95,67 @@ human review ← SQLite record ← schema validation ← raw output + provenance
   Model failures and invalid output become inspectable failed records.
 - `storage.py`: SQLite job lifecycle and append-only review history.
 - `server.py` / `static/`: a thin local HTTP transport and plain HTML interface.
+- `tier1.py`: versioned ZIP contract, evidence verification and detector-event import.
+
+## Tier-1 handoff
+
+The attached Colab notebook currently prints `violations` and keeps trigger
+images in memory; it does not export a durable event/evidence handoff. To create
+one, upload `scripts/export_tier1_bundle.py` into the Colab working directory
+and run this **after** its final detection cell (which defines `violations`,
+`test_frames`, `video_path` and `CAMERA_TYPE`):
+
+```python
+from export_tier1_bundle import export_bundle
+from google.colab import files
+
+bundle = export_bundle(
+    violations,
+    test_frames,
+    source_video=video_path,
+    camera_type=CAMERA_TYPE,
+    destination="tier1_events.zip",
+)
+files.download(str(bundle))
+```
+
+The exporter copies source frames, not annotated/resized notebook previews. By
+default it includes two preceding and two following frames around each trigger;
+pass `frame_offsets=(-15, -10, -5, -2, -1, 0, 1, 2, 5)` when longer motion
+context is needed. The bundle contains a versioned `manifest.json` with source
+video name, camera type, event type, trigger frame, track ID, frame hashes and
+the notebook's original `confidence` value. That last value is stored as a
+**raw heuristic measurement**, not a calibrated probability: the notebook uses
+pixel displacement for wrong-way events and IoU for collision events.
+
+Transfer the ZIP to the local machine and run:
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.import_tier1_bundle path\to\tier1_events.zip
+```
+
+For the **already-executed attached notebook**, the source video and extracted
+frames were not attached, but the notebook contains two displayed trigger
+previews. To demo the handoff without rerunning Colab:
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.notebook_preview_bundle F:\Downloads\Untitled18.ipynb data\tier1_notebook_preview.zip --source-video v41.mov --camera-type CCTV
+.\.venv\Scripts\python.exe -m scripts.import_tier1_bundle data\tier1_notebook_preview.zip
+```
+
+These are **540×320 annotated previews**, not original frames or a motion
+sequence. Their records are marked `annotated_preview` and must not be used for
+VLM verification or a final violation decision.
+
+The command prints stable record IDs and can be rerun on the same ZIP without
+duplicating records. Open <http://127.0.0.1:8000> and select an imported record
+to see the trigger, context frames and review controls. Import does not load
+the GPU model. A wrong-way or collision trigger remains an **unverified Tier-1
+candidate**; approval/rejection is a human review entry, not an automatic
+finding or notice. The current notebook's final detection cell does not emit
+no-helmet or triple-riding events, despite the earlier summary mentioning
+triple riding. Multi-frame VLM verification needs a later reasoner and output
+contract extension; a single frame cannot establish travel direction.
 
 The record retains model/checkpoint revision, prompt version, package versions,
 GPU, precision, generation settings, timing, peak torch allocation, raw response,

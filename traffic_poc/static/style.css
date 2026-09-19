@@ -12,6 +12,7 @@ button:disabled { cursor: wait; }
 a { color: #164c90; }
 .muted, figcaption { color: #555; font-size: 14px; }
 .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.frames { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
 figure { margin: 0; }
 img { width: 100%; height: auto; border: 1px solid #ccc; }
 pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; background: #eee; padding: 12px; }

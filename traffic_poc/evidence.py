@@ -15,6 +15,7 @@ from traffic_poc.config import Settings
 @dataclass(frozen=True)
 class Evidence:
     original_path: Path
+    review_path: Path
     image_path: Path
     sha256: str
     width: int
@@ -31,6 +32,7 @@ class Evidence:
             "model_width": self.model_width,
             "model_height": self.model_height,
             "original_file": self.original_path.name,
+            "review_image_file": self.review_path.name,
             "model_image_file": self.image_path.name,
         }
 
@@ -57,18 +59,30 @@ def ingest_image(encoded: str, record_id: str, settings: Settings) -> Evidence:
                     raise ValueError("Image exceeds the 24 megapixel limit")
                 image = ImageOps.exif_transpose(source).convert("RGB")
                 image.load()
-    except (UnidentifiedImageError, OSError, Image.DecompressionBombError,
-            Image.DecompressionBombWarning) as exc:
+    except (
+        UnidentifiedImageError,
+        OSError,
+        Image.DecompressionBombError,
+        Image.DecompressionBombWarning,
+    ) as exc:
         raise ValueError("Image is invalid or too large to decode safely") from exc
     width, height = image.size
-    image.thumbnail((settings.max_image_edge, settings.max_image_edge))
     directory = settings.data_dir / "evidence"
     directory.mkdir(parents=True, exist_ok=True)
     original_path = directory / f"{record_id}.original"
+    review_path = directory / f"{record_id}.review.png"
     image_path = directory / f"{record_id}.png"
     original_path.write_bytes(data)
+    image.save(review_path, format="PNG")
+    image.thumbnail((settings.max_image_edge, settings.max_image_edge))
     image.save(image_path, format="PNG")
     return Evidence(
-        original_path, image_path, hashlib.sha256(data).hexdigest(),
-        width, height, image.width, image.height,
+        original_path,
+        review_path,
+        image_path,
+        hashlib.sha256(data).hexdigest(),
+        width,
+        height,
+        image.width,
+        image.height,
     )

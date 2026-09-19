@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class Contract(BaseModel):
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, strict=True)
 
 
 class Finding(Contract):
@@ -30,7 +30,9 @@ class Analysis(Contract):
         if (self.outcome == "candidate_violation") != bool(self.findings):
             raise ValueError("Only candidate_violation may contain nonempty findings")
         if any(not text.strip() or len(text) > 1000 for text in self.limitations):
-            raise ValueError("Limitations must be nonempty strings under 1000 characters")
+            raise ValueError(
+                "Limitations must be nonempty strings under 1000 characters"
+            )
         return self
 
 

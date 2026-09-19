@@ -35,11 +35,12 @@ class TorchVLM:
         self.lock = Lock()
         self.load_seconds = None
         self.resolved_revision = None
+        self.state = "not_loaded"
 
     def _load(self) -> None:
         """Fail explicitly without CUDA rather than silently running a CPU demo."""
         import torch
-        from transformers import AutoModelForImageTextToText, AutoProcessor
+        from transformers import AutoConfig, AutoModelForImageTextToText, AutoProcessor
 
         if self.model is not None:
             return
@@ -51,18 +52,32 @@ class TorchVLM:
             "cache_dir": str(self.settings.model_cache),
             "revision": self.settings.revision,
             "trust_remote_code": False,
+            "local_files_only": self.settings.offline,
         }
-        processor = AutoProcessor.from_pretrained(self.settings.model_id, **options)
-        model = AutoModelForImageTextToText.from_pretrained(
-            self.settings.model_id,
-            dtype=dtype,
-            device_map="cuda:0",
-            attn_implementation="sdpa",
-            **options,
-        ).eval()
+        self.state = "loading"
+        try:
+            config = AutoConfig.from_pretrained(self.settings.model_id, **options)
+            resolved_revision = getattr(config, "_commit_hash", None)
+            model_options = {**options}
+            if resolved_revision:
+                model_options["revision"] = resolved_revision
+            processor = AutoProcessor.from_pretrained(
+                self.settings.model_id, **model_options
+            )
+            model = AutoModelForImageTextToText.from_pretrained(
+                self.settings.model_id,
+                dtype=dtype,
+                device_map="cuda:0",
+                attn_implementation="sdpa",
+                **model_options,
+            ).eval()
+        except Exception:
+            self.state = "load_failed"
+            raise
         self.processor, self.model = processor, model
         self.resolved_revision = getattr(model.config, "_commit_hash", None)
         self.load_seconds = round(time.perf_counter() - started, 3)
+        self.state = "ready"
 
     def warmup(self) -> None:
         """Download and load the checkpoint before accepting the first real job."""
@@ -76,30 +91,41 @@ class TorchVLM:
 
         with self.lock:
             self._load()
+            with Image.open(evidence.image_path) as source:
+                image = source.copy()
             messages = [
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": [
-                    {"type": "image", "image": Image.open(evidence.image_path).copy()},
-                    {"type": "text", "text": user_prompt()},
-                ]},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image", "image": image},
+                        {"type": "text", "text": user_prompt()},
+                    ],
+                },
             ]
             torch.cuda.reset_peak_memory_stats()
             started = time.perf_counter()
             try:
                 with torch.inference_mode():
                     inputs = self.processor.apply_chat_template(
-                        messages, tokenize=True, add_generation_prompt=True,
-                        return_dict=True, return_tensors="pt",
+                        messages,
+                        tokenize=True,
+                        add_generation_prompt=True,
+                        return_dict=True,
+                        return_tensors="pt",
                     ).to(self.model.device)
                     inputs.pop("token_type_ids", None)
                     input_tokens = inputs.input_ids.shape[1]
                     output = self.model.generate(
-                        **inputs, max_new_tokens=self.settings.max_new_tokens,
-                        do_sample=False, use_cache=True,
+                        **inputs,
+                        max_new_tokens=self.settings.max_new_tokens,
+                        do_sample=False,
+                        use_cache=True,
                     )
                     generated = output[:, input_tokens:]
                     raw = self.processor.batch_decode(
-                        generated, skip_special_tokens=True,
+                        generated,
+                        skip_special_tokens=True,
                         clean_up_tokenization_spaces=False,
                     )[0]
                     output_tokens = generated.shape[1]
@@ -116,12 +142,16 @@ class TorchVLM:
                         "load_seconds": self.load_seconds,
                         "inference_seconds": round(time.perf_counter() - started, 3),
                         "peak_allocated_mib": round(
-                            torch.cuda.max_memory_allocated() / 1024**2, 1),
+                            torch.cuda.max_memory_allocated() / 1024**2, 1
+                        ),
                         "input_tokens": input_tokens,
                         "output_tokens": output_tokens,
                         "generation_limit_reached": (
-                            output_tokens >= self.settings.max_new_tokens),
+                            output_tokens >= self.settings.max_new_tokens
+                        ),
                         "max_new_tokens": self.settings.max_new_tokens,
+                        "max_image_edge": self.settings.max_image_edge,
+                        "vision_grid_thw": inputs.image_grid_thw.tolist(),
                         "do_sample": False,
                     }
                 return ModelResponse(raw, provenance)

@@ -9,7 +9,7 @@ import uuid
 import zipfile
 from pathlib import Path
 
-from traffic_poc.tier1 import Tier1Manifest
+from traffic_poc.tier1.bundle import Tier1Manifest
 
 
 def export_preview_bundle(

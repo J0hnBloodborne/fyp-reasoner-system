@@ -21,7 +21,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-.\.venv\Scripts\python.exe -m scripts.download_model
+.\.venv\Scripts\python.exe -m scripts.tier2.download_model
 .\.venv\Scripts\python.exe -m traffic_poc --warmup
 ```
 
@@ -40,7 +40,7 @@ running the downloader:
 
 ```powershell
 $env:HF_HUB_DISABLE_XET = "1"
-.\.venv\Scripts\python.exe -m scripts.download_model
+.\.venv\Scripts\python.exe -m scripts.tier2.download_model
 ```
 
 The downloader resumes partial artifacts through the Hugging Face cache.
@@ -86,27 +86,34 @@ human review ← SQLite record ← schema validation ← raw output + provenance
 Tier-1 ZIP bundle → verified event/evidence importer → unverified review record
 ```
 
-- `schemas.py`: versioned inference and review contracts; unsupported fields and
-  contradictory outcomes are rejected.
-- `evidence.py`: upload validation, original-byte preservation, image preprocessing.
-- `inference.py`: the `Reasoner` protocol and lazy `TorchVLM` implementation. Torch
-  tensors stay inside this boundary.
-- `pipeline.py`: one inference worker and at most four accepted outstanding jobs.
-  Model failures and invalid output become inspectable failed records.
-- `storage.py`: SQLite job lifecycle and append-only review history.
-- `server.py` / `static/`: a thin local HTTP transport and plain HTML interface.
-- `tier1.py`: versioned ZIP contract, evidence verification and detector-event import.
+The code is grouped by feature, with records shared by both stages:
+
+```text
+traffic_poc/
+  records/  contracts, evidence validation, SQLite review history
+  tier1/    versioned detector bundle contract and importer
+  tier2/    VLM adapter, prompt, bounded inference pipeline
+  web/      local HTTP transport and plain HTML interface
+  config.py shared runtime settings
+scripts/
+  tier1/    Colab export, local import, notebook-preview adapter
+  tier2/    model download and GPU smoke check
+```
+
+The web layer calls the workflows; both stages use `records/` for evidence and
+persistence. Torch tensors stay inside `tier2/inference.py`. Invalid model output
+becomes an inspectable failed record, and reviews append without replacing it.
 
 ## Tier-1 handoff
 
 The attached Colab notebook currently prints `violations` and keeps trigger
 images in memory; it does not export a durable event/evidence handoff. To create
-one, upload `scripts/export_tier1_bundle.py` into the Colab working directory
+one, upload `scripts/tier1/export_bundle.py` into the Colab working directory
 and run this **after** its final detection cell (which defines `violations`,
 `test_frames`, `video_path` and `CAMERA_TYPE`):
 
 ```python
-from export_tier1_bundle import export_bundle
+from export_bundle import export_bundle
 from google.colab import files
 
 bundle = export_bundle(
@@ -131,7 +138,7 @@ pixel displacement for wrong-way events and IoU for collision events.
 Transfer the ZIP to the local machine and run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m scripts.import_tier1_bundle path\to\tier1_events.zip
+.\.venv\Scripts\python.exe -m scripts.tier1.import_bundle path\to\tier1_events.zip
 ```
 
 For the **already-executed attached notebook**, the source video and extracted
@@ -139,8 +146,8 @@ frames were not attached, but the notebook contains two displayed trigger
 previews. To demo the handoff without rerunning Colab:
 
 ```powershell
-.\.venv\Scripts\python.exe -m scripts.notebook_preview_bundle F:\Downloads\Untitled18.ipynb data\tier1_notebook_preview.zip --source-video v41.mov --camera-type CCTV
-.\.venv\Scripts\python.exe -m scripts.import_tier1_bundle data\tier1_notebook_preview.zip
+.\.venv\Scripts\python.exe -m scripts.tier1.notebook_preview F:\Downloads\Untitled18.ipynb data\tier1_notebook_preview.zip --source-video v41.mov --camera-type CCTV
+.\.venv\Scripts\python.exe -m scripts.tier1.import_bundle data\tier1_notebook_preview.zip
 ```
 
 These are **540×320 annotated previews**, not original frames or a motion
@@ -194,8 +201,8 @@ optimization and model architecture changes are separate from this application.
 .\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\ruff.exe check .
 .\.venv\Scripts\ruff.exe format --check .
-node --check traffic_poc/static/app.js
-.\.venv\Scripts\python.exe -m scripts.smoke_model path\to\image.jpg --runs 2
+node --check traffic_poc/web/static/app.js
+.\.venv\Scripts\python.exe -m scripts.tier2.smoke_model path\to\image.jpg --runs 2
 ```
 
 Unit/integration tests use stub inference and never download a model. The separate

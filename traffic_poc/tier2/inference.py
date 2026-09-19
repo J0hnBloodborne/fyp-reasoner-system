@@ -9,8 +9,8 @@ from typing import Protocol
 from PIL import Image
 
 from traffic_poc.config import Settings
-from traffic_poc.evidence import Evidence
-from traffic_poc.prompts import SYSTEM_PROMPT, user_prompt
+from traffic_poc.records.evidence import Evidence
+from traffic_poc.tier2.prompts import SYSTEM_PROMPT, user_prompt
 
 
 @dataclass(frozen=True)

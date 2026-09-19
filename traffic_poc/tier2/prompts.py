@@ -3,7 +3,7 @@
 import hashlib
 import json
 
-from traffic_poc.schemas import Analysis
+from traffic_poc.records.schemas import Analysis
 
 PROMPT_VERSION = "traffic-single-frame-v2"
 

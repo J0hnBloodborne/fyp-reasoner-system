@@ -8,7 +8,7 @@ import pytest
 from PIL import Image
 
 from traffic_poc.config import Settings
-from traffic_poc.evidence import ingest_image
+from traffic_poc.records.evidence import ingest_image
 
 
 def test_preserves_original_and_bounds_model_image(tmp_path, image_base64):

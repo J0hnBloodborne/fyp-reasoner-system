@@ -7,10 +7,10 @@ import pytest
 
 from tests.conftest import StubReasoner
 from traffic_poc.config import Settings
-from traffic_poc.inference import ModelResponse
-from traffic_poc.pipeline import Pipeline, PipelineBusy
-from traffic_poc.schemas import Review, Submission
-from traffic_poc.storage import Repository, now
+from traffic_poc.records.schemas import Review, Submission
+from traffic_poc.records.storage import Repository, now
+from traffic_poc.tier2.inference import ModelResponse
+from traffic_poc.tier2.pipeline import Pipeline, PipelineBusy
 
 
 def test_inference_and_append_only_review(pipeline, image_base64, candidate):

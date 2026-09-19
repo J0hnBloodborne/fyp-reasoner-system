@@ -20,7 +20,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Application dependency installation failed' }
 if ($LASTEXITCODE -ne 0) { throw 'CUDA verification failed' }
 
 if (-not $SkipModel) {
-    & $venvPython -m scripts.download_model
+    & $venvPython -m scripts.tier2.download_model
     if ($LASTEXITCODE -ne 0) { throw 'Model download failed; rerun to resume' }
 }
 

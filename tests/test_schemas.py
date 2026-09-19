@@ -5,8 +5,8 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from traffic_poc.prompts import SYSTEM_PROMPT, user_prompt
-from traffic_poc.schemas import Analysis, Review, parse_analysis
+from traffic_poc.records.schemas import Analysis, Review, parse_analysis
+from traffic_poc.tier2.prompts import SYSTEM_PROMPT, user_prompt
 
 
 def test_plain_and_fenced_json(candidate):

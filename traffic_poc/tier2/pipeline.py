@@ -8,12 +8,12 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 from traffic_poc.config import Settings
-from traffic_poc.evidence import ingest_image
-from traffic_poc.inference import Reasoner
-from traffic_poc.lease import RuntimeLease
-from traffic_poc.prompts import PROMPT_VERSION, prompt_hash
-from traffic_poc.schemas import Submission, parse_analysis
-from traffic_poc.storage import Repository, now
+from traffic_poc.records.evidence import ingest_image
+from traffic_poc.records.schemas import Submission, parse_analysis
+from traffic_poc.records.storage import Repository, now
+from traffic_poc.tier2.inference import Reasoner
+from traffic_poc.tier2.lease import RuntimeLease
+from traffic_poc.tier2.prompts import PROMPT_VERSION, prompt_hash
 
 logger = logging.getLogger(__name__)
 

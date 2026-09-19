@@ -8,12 +8,12 @@ import zipfile
 import pytest
 from PIL import Image
 
-from scripts.export_tier1_bundle import export_bundle
-from scripts.notebook_preview_bundle import export_preview_bundle
+from scripts.tier1.export_bundle import export_bundle
+from scripts.tier1.notebook_preview import export_preview_bundle
 from traffic_poc.config import Settings
-from traffic_poc.schemas import Review
-from traffic_poc.storage import Repository
-from traffic_poc.tier1 import import_bundle
+from traffic_poc.records.schemas import Review
+from traffic_poc.records.storage import Repository
+from traffic_poc.tier1.bundle import import_bundle
 
 
 @pytest.fixture

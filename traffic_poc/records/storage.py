@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
-from traffic_poc.schemas import Review
+from traffic_poc.records.schemas import Review
 
 
 def now() -> str:

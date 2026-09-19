@@ -10,8 +10,8 @@ from urllib.parse import urlsplit
 
 from pydantic import ValidationError
 
-from traffic_poc.pipeline import Pipeline, PipelineBusy
-from traffic_poc.schemas import Review, Submission
+from traffic_poc.records.schemas import Review, Submission
+from traffic_poc.tier2.pipeline import Pipeline, PipelineBusy
 
 STATIC = Path(__file__).parent / "static"
 RECORD_ROUTE = re.compile(

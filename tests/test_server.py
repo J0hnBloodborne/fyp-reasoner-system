@@ -8,9 +8,9 @@ import urllib.request
 
 import pytest
 
-from scripts.export_tier1_bundle import export_bundle
-from traffic_poc.server import LocalServer
-from traffic_poc.tier1 import import_bundle
+from scripts.tier1.export_bundle import export_bundle
+from traffic_poc.tier1.bundle import import_bundle
+from traffic_poc.web.server import LocalServer
 
 
 @pytest.fixture

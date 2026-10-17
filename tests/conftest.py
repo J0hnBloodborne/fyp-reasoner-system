@@ -44,9 +44,17 @@ class StubReasoner:
         self.raw = raw
         self.error = error
         self.provenance = provenance or {}
+        self.verified = []
 
     def analyze(self, evidence):
         assert evidence.image_path.exists()
+        if self.error:
+            raise self.error
+        return ModelResponse(self.raw, self.provenance)
+
+    def verify(self, trigger_type, frames):
+        assert all(path.exists() for _, _, path in frames)
+        self.verified.append((trigger_type, [index for index, _, _ in frames]))
         if self.error:
             raise self.error
         return ModelResponse(self.raw, self.provenance)

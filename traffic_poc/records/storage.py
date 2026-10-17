@@ -132,6 +132,19 @@ class Repository:
                 (record_id, now(), review.model_dump_json()),
             )
 
+    def unverified_tier1(self) -> list[str]:
+        """Tier-1 events never verified, or interrupted while queued or running."""
+        with self.connect() as db:
+            return [
+                row["id"]
+                for row in db.execute(
+                    "SELECT id FROM records "
+                    "WHERE json_extract(payload, '$.source') = 'tier1_bundle' "
+                    "AND coalesce(json_extract(payload, '$.verification.status'), "
+                    "'queued') IN ('queued', 'running') ORDER BY created_at"
+                )
+            ]
+
     def recover_interrupted(self) -> None:
         """Mark interrupted jobs failed rather than displaying them as eternally queued."""
         with self.connect() as db:

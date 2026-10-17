@@ -161,3 +161,26 @@ def test_bundle_upload_rejects_non_zip(server):
         post_zip(server, "/api/bundles", b"not a zip")
     assert exc.value.code == 400
     assert server.pipeline.repository.list_recent() == []
+
+
+def test_report_download_and_upload_rejection(server, tmp_path, image_base64):
+    source = tmp_path / "frame_0000.png"
+    source.write_bytes(base64.b64decode(image_base64))
+    bundle = export_bundle(
+        [{"frame": 1, "type": "Wrong-Way Driving", "target_id": "ID 8"}],
+        [source],
+        "v41.mov",
+        "CCTV",
+        tmp_path / "bundle.zip",
+    )
+    [record_id] = import_bundle(
+        bundle, server.pipeline.settings, server.pipeline.repository
+    )
+    with request(server, f"/api/records/{record_id}/report") as response:
+        assert "attachment" in response.headers["Content-Disposition"]
+        assert json.load(response)["incident"]["type"] == "Wrong-Way Driving"
+    with request(server, "/api/records", {"image_base64": image_base64}) as response:
+        upload_id = json.load(response)["id"]
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        request(server, f"/api/records/{upload_id}/report")
+    assert exc.value.code == 400

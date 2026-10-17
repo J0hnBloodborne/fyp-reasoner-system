@@ -49,7 +49,24 @@
       <details><summary>Review history</summary><pre id="reviews"></pre></details>
       <details><summary>Raw model output and provenance</summary><pre id="raw"></pre><pre id="provenance"></pre></details>
     </section>
-    <section><h2>Recent records</h2><button id="refresh" type="button">Refresh</button><ul id="recent"></ul></section>
+    <section>
+      <h2>Search records</h2>
+      <form id="search">
+        <label>Describe the event <input id="q" type="search" maxlength="300" placeholder="a car travelling against traffic"></label>
+        <label>Source <select id="f-source"><option value="">Any</option><option value="tier1_bundle">Tier-1 event</option><option value="manual_upload">Uploaded image</option></select></label>
+        <label>Type <input id="f-type" maxlength="100" placeholder="Wrong-Way Driving"></label>
+        <label>Camera <select id="f-camera_type"><option value="">Any</option><option>CCTV</option><option>DASHCAM</option></select></label>
+        <label>Source video <input id="f-source_video" maxlength="200"></label>
+        <label>Tier-2 verdict <select id="f-verdict"><option value="">Any</option><option>supported</option><option>not_supported</option><option>insufficient_evidence</option></select></label>
+        <label>Decision <select id="f-decision"><option value="">Any</option><option>approved</option><option>rejected</option><option>unreviewed</option></select></label>
+        <label>Imported from <input id="f-imported_from" type="date"></label>
+        <label>Imported to <input id="f-imported_to" type="date"></label>
+        <button type="submit">Search</button>
+        <button id="clear" type="reset">Clear</button>
+      </form>
+      <p id="count" class="muted"></p>
+      <ul id="recent"></ul>
+    </section>
   </main>
 </body>
 </html>

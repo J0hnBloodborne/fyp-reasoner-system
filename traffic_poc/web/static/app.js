@@ -37,15 +37,42 @@ async function health() {
   } catch (error) { $("health").textContent = error.message; }
 }
 
+const FILTERS = ["source", "type", "camera_type", "source_video", "verdict", "decision", "imported_from", "imported_to"];
+
+function searchParams() {
+  const params = new URLSearchParams();
+  if ($("q").value.trim()) params.set("q", $("q").value.trim());
+  for (const key of FILTERS) {
+    const value = $(`f-${key}`).value.trim();
+    if (value) params.set(key, value);
+  }
+  return params;
+}
+
+function describeRow(record) {
+  const origin = record.source_video ? `${record.source_video} frame ${record.trigger_frame}` : "uploaded image";
+  const finding = record.verdict || record.outcome || record.verification_status || record.status;
+  return [record.types.join(", ") || "no finding", origin, finding,
+    record.decision || "unreviewed", record.created_at.slice(0, 16).replace("T", " ")].join(" · ");
+}
+
 async function recent() {
-  const records = await api("/api/records");
+  const params = searchParams();
+  const records = await api(`/api/records${params.size ? "?" + params : ""}`);
+  $("count").textContent = `${records.length} record(s)${params.has("q") ? ", best match first" : ", newest first"}`;
   $("recent").replaceChildren();
   for (const record of records) {
     const li = document.createElement("li");
     const button = document.createElement("button");
-    button.textContent = `${record.id.slice(0, 8)} · ${record.status} · ${record.created_at}`;
+    button.textContent = describeRow(record);
     button.addEventListener("click", () => selectRecord(record.id).catch(error => message(error.message)));
     li.append(button);
+    if (record.snippet) {
+      const snippet = document.createElement("p");
+      snippet.className = "muted";
+      snippet.textContent = record.snippet.replace(/\s+/g, " ");
+      li.append(snippet);
+    }
     $("recent").append(li);
   }
 }
@@ -194,6 +221,10 @@ $("review").addEventListener("submit", async event => {
   } catch (error) { message(error.message); }
   finally { buttons.forEach(button => { button.disabled = false; }); }
 });
-$("refresh").addEventListener("click", () => recent().catch(error => message(error.message)));
+$("search").addEventListener("submit", event => {
+  event.preventDefault();
+  recent().catch(error => message(error.message));
+});
+$("search").addEventListener("reset", () => setTimeout(() => recent().catch(error => message(error.message))));
 health();
 recent().catch(error => message(error.message));

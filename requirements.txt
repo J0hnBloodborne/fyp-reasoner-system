@@ -3,3 +3,5 @@ accelerate
 pillow
 pydantic
 huggingface-hub
+ultralytics
+lap

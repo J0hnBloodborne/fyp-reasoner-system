@@ -123,7 +123,7 @@ def test_closed_pipeline_rejects_new_jobs(pipeline, image_base64):
     pipeline.close()
     with pytest.raises(PipelineBusy):
         pipeline.submit(Submission(image_base64=image_base64))
-    assert pipeline.repository.list_recent() == []
+    assert pipeline.repository.search() == []
 
 
 def test_second_pipeline_cannot_recover_live_jobs(pipeline, image_base64):

@@ -56,7 +56,7 @@ def test_bundle_import_is_idempotent_and_unverified(tmp_path, bundle, frame_path
     ids = import_bundle(bundle, settings, repository)
     assert len(ids) == 2
     assert import_bundle(bundle, settings, repository) == ids
-    assert len(repository.list_recent()) == 2
+    assert len(repository.search()) == 2
 
     wrong_way = repository.get(ids[0])
     assert wrong_way["status"] == "awaiting_review"
@@ -85,7 +85,7 @@ def test_bundle_rejects_tampered_frame_before_import(tmp_path, bundle):
     repository = Repository(settings.data_dir)
     with pytest.raises(ValueError, match="hash mismatch"):
         import_bundle(corrupt, settings, repository)
-    assert repository.list_recent() == []
+    assert repository.search() == []
 
 
 def test_bundle_rejects_undeclared_files(tmp_path, bundle):

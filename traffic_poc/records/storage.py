@@ -1,13 +1,14 @@
-"""SQLite job records and append-only human reviews."""
+"""SQLite job records, append-only human reviews and a full-text index."""
 
 import json
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from traffic_poc.records.schemas import Review
+from traffic_poc.records.search import match_query, search_text, summarize
 
 
 def now() -> str:
@@ -34,7 +35,14 @@ class Repository:
                     created_at TEXT NOT NULL,
                     payload TEXT NOT NULL
                 );
+                CREATE VIRTUAL TABLE IF NOT EXISTS record_search USING fts5(
+                    id UNINDEXED, body, tokenize='porter unicode61'
+                );
             """)
+            for row in db.execute(
+                "SELECT id FROM records WHERE id NOT IN (SELECT id FROM record_search)"
+            ).fetchall():
+                self._index(db, row["id"])
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
@@ -48,6 +56,30 @@ class Repository:
         finally:
             db.close()
 
+    @staticmethod
+    def _reviews(db: sqlite3.Connection, record_id: str) -> list[dict]:
+        return [
+            {
+                "review_id": review["id"],
+                "created_at": review["created_at"],
+                **json.loads(review["payload"]),
+            }
+            for review in db.execute(
+                "SELECT * FROM reviews WHERE record_id=? ORDER BY id", (record_id,)
+            )
+        ]
+
+    def _index(self, db: sqlite3.Connection, record_id: str) -> None:
+        """Refresh one record's searchable text inside the caller's transaction."""
+        row = db.execute(
+            "SELECT payload FROM records WHERE id=?", (record_id,)
+        ).fetchone()
+        text = search_text(json.loads(row["payload"]), self._reviews(db, record_id))
+        db.execute("DELETE FROM record_search WHERE id=?", (record_id,))
+        db.execute(
+            "INSERT INTO record_search (id, body) VALUES (?, ?)", (record_id, text)
+        )
+
     def create(self, payload: dict) -> None:
         with self.connect() as db:
             db.execute(
@@ -59,6 +91,7 @@ class Repository:
                     json.dumps(payload),
                 ),
             )
+            self._index(db, payload["id"])
 
     def update(self, record_id: str, **changes) -> None:
         """Atomically update a job without touching its review history."""
@@ -79,6 +112,7 @@ class Repository:
                     record_id,
                 ),
             )
+            self._index(db, record_id)
 
     def get(self, record_id: str) -> dict:
         with self.connect() as db:
@@ -88,31 +122,56 @@ class Repository:
             if row is None:
                 raise KeyError(record_id)
             payload = json.loads(row["payload"])
-            payload["reviews"] = [
-                {
-                    "review_id": review["id"],
-                    "created_at": review["created_at"],
-                    **json.loads(review["payload"]),
-                }
-                for review in db.execute(
-                    "SELECT * FROM reviews WHERE record_id=? ORDER BY id", (record_id,)
-                )
-            ]
+            payload["reviews"] = self._reviews(db, record_id)
             return payload
 
-    def list_recent(self) -> list[dict]:
+    def search(
+        self,
+        query: str | None = None,
+        imported_from: date | None = None,
+        imported_to: date | None = None,
+        limit: int = 100,
+        **filters: str,
+    ) -> list[dict]:
+        """Rank text matches by BM25, or list newest first without a query.
+
+        Filters compare against list summary fields; "type" matches any of a
+        record's types and decision "unreviewed" matches records without
+        reviews. Filtering runs in Python, which suits a local record store.
+        """
+        match = match_query(query) if query else None
+        conditions, params = [], []
+        if match:
+            sql = (
+                "SELECT r.id, r.payload, "
+                "snippet(record_search, 1, '[', ']', '…', 12) AS snippet "
+                "FROM records r JOIN record_search ON record_search.id = r.id"
+            )
+            conditions.append("record_search MATCH ?")
+            params.append(match)
+            order = "bm25(record_search)"
+        else:
+            sql = "SELECT r.id, r.payload, NULL AS snippet FROM records r"
+            order = "r.created_at DESC"
+        if imported_from:
+            conditions.append("r.created_at >= ?")
+            params.append(imported_from.isoformat())
+        if imported_to:
+            conditions.append("r.created_at < ?")
+            params.append((imported_to + timedelta(days=1)).isoformat())
+        if conditions:
+            sql += " WHERE " + " AND ".join(conditions)
+        results = []
         with self.connect() as db:
-            return [
-                {
-                    "id": row["id"],
-                    "created_at": row["created_at"],
-                    "status": row["status"],
-                }
-                for row in db.execute(
-                    "SELECT id, created_at, status FROM records "
-                    "ORDER BY created_at DESC LIMIT 50"
+            for row in db.execute(f"{sql} ORDER BY {order}", params).fetchall():
+                summary = summarize(
+                    json.loads(row["payload"]), self._reviews(db, row["id"])
                 )
-            ]
+                if all(_matches(summary, key, value) for key, value in filters.items()):
+                    results.append({**summary, "snippet": row["snippet"]})
+                    if len(results) == limit:
+                        break
+        return results
 
     def review(self, record_id: str, review: Review) -> None:
         """Preserve the original model analysis and append validated human corrections."""
@@ -131,6 +190,7 @@ class Repository:
                 "INSERT INTO reviews (record_id, created_at, payload) VALUES (?, ?, ?)",
                 (record_id, now(), review.model_dump_json()),
             )
+            self._index(db, record_id)
 
     def unverified_tier1(self) -> list[str]:
         """Tier-1 events never verified, or interrupted while queued or running."""
@@ -162,3 +222,11 @@ class Repository:
                     "UPDATE records SET status='failed', payload=? WHERE id=?",
                     (json.dumps(payload), row["id"]),
                 )
+
+
+def _matches(summary: dict, key: str, value: str) -> bool:
+    if key == "type":
+        return value in summary["types"]
+    if key == "decision" and value == "unreviewed":
+        return summary["decision"] is None
+    return summary[key] == value

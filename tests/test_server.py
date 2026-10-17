@@ -160,7 +160,7 @@ def test_bundle_upload_rejects_non_zip(server):
     with pytest.raises(urllib.error.HTTPError) as exc:
         post_zip(server, "/api/bundles", b"not a zip")
     assert exc.value.code == 400
-    assert server.pipeline.repository.list_recent() == []
+    assert server.pipeline.repository.search() == []
 
 
 def test_report_download_and_upload_rejection(server, tmp_path, image_base64):

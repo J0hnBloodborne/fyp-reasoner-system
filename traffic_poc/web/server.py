@@ -154,7 +154,7 @@ class Handler(BaseHTTPRequestHandler):
                     },
                 )
             elif path == "/api/records":
-                self._json(200, pipeline.repository.list_recent())
+                self._json(200, pipeline.repository.search())
             elif match := FRAME_ROUTE.fullmatch(path):
                 record_id, frame_index = match.groups()
                 record = pipeline.repository.get(record_id)

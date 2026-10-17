@@ -3,6 +3,7 @@
 import base64
 import io
 import json
+import time
 
 import pytest
 from PIL import Image
@@ -68,3 +69,13 @@ def pipeline(tmp_path, candidate):
     )
     yield result
     result.close()
+
+
+def wait_verified(pipeline, record_id, timeout=10):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        verification = pipeline.repository.get(record_id).get("verification") or {}
+        if verification.get("status") in {"completed", "failed", "skipped"}:
+            return verification
+        time.sleep(0.05)
+    raise TimeoutError(record_id)

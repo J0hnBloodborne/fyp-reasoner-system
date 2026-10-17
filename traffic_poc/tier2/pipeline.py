@@ -141,6 +141,9 @@ class Pipeline:
                 raise ValueError("Only imported Tier-1 events can be verified")
             if record_id in self.verifying:
                 return
+            status = (record.get("verification") or {}).get("status")
+            if status in {"completed", "skipped"}:
+                raise ValueError(f"Verification already {status}; only failures retry")
             verification = {
                 "status": "queued",
                 "prompt_version": VERIFY_PROMPT_VERSION,

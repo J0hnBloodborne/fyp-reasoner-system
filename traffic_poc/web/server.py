@@ -3,6 +3,8 @@
 import json
 import logging
 import re
+import tempfile
+import zipfile
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -11,11 +13,12 @@ from urllib.parse import urlsplit
 from pydantic import ValidationError
 
 from traffic_poc.records.schemas import Review, Submission
+from traffic_poc.tier1.bundle import MAX_BUNDLE_BYTES, import_bundle
 from traffic_poc.tier2.pipeline import Pipeline, PipelineBusy
 
 STATIC = Path(__file__).parent / "static"
 RECORD_ROUTE = re.compile(
-    r"/api/records/([a-f0-9]{32})(?:/(image|original|export|review))?"
+    r"/api/records/([a-f0-9]{32})(?:/(image|original|export|review|verify))?"
 )
 FRAME_ROUTE = re.compile(r"/api/records/([a-f0-9]{32})/frames/([1-9][0-9]{0,8})")
 logger = logging.getLogger(__name__)
@@ -88,6 +91,42 @@ class Handler(BaseHTTPRequestHandler):
         if len(data) != size:
             raise ValueError("Incomplete request body")
         return json.loads(data)
+
+    def _bundle(self) -> list[str]:
+        """Stream a ZIP body to disk, import it, and queue each event's verification."""
+        if self.headers.get("Content-Type", "").split(";")[0] != "application/zip":
+            raise ValueError("Content-Type must be application/zip")
+        if self.headers.get("Transfer-Encoding"):
+            raise ValueError("Chunked requests are not supported")
+        size = int(self.headers.get("Content-Length", "0"))
+        if size < 1 or size > MAX_BUNDLE_BYTES:
+            raise ValueError("Bundle is empty or too large")
+        pipeline = self.server.pipeline
+        with tempfile.NamedTemporaryFile(
+            dir=pipeline.settings.data_dir, suffix=".zip", delete=False
+        ) as upload:
+            path = Path(upload.name)
+            remaining = size
+            while remaining:
+                chunk = self.rfile.read(min(remaining, 1024 * 1024))
+                if not chunk:
+                    break
+                upload.write(chunk)
+                remaining -= len(chunk)
+        try:
+            if remaining:
+                raise ValueError("Incomplete request body")
+            ids = import_bundle(path, pipeline.settings, pipeline.repository)
+        except zipfile.BadZipFile as exc:
+            raise ValueError("Upload is not a valid ZIP bundle") from exc
+        finally:
+            path.unlink()
+        for record_id in ids:
+            if (pipeline.repository.get(record_id).get("verification") or {}).get(
+                "status"
+            ) is None:
+                pipeline.verify(record_id)
+        return ids
 
     def do_GET(self) -> None:
         if not self._trusted_request():
@@ -177,10 +216,15 @@ class Handler(BaseHTTPRequestHandler):
                 submission = Submission.model_validate(self._body())
                 record_id = pipeline.submit(submission)
                 self._json(202, {"id": record_id})
+            elif path == "/api/bundles":
+                self._json(201, {"record_ids": self._bundle()})
             elif (match := RECORD_ROUTE.fullmatch(path)) and match.group(2) == "review":
                 review = Review.model_validate(self._body())
                 pipeline.repository.review(match.group(1), review)
                 self._json(200, pipeline.repository.get(match.group(1)))
+            elif match and match.group(2) == "verify":
+                pipeline.verify(match.group(1))
+                self._json(202, pipeline.repository.get(match.group(1)))
             else:
                 self._json(404, {"error": "Not found"})
         except PipelineBusy as exc:

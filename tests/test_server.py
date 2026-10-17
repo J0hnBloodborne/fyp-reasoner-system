@@ -9,6 +9,7 @@ import urllib.request
 import pytest
 
 from scripts.tier1.export_bundle import export_bundle
+from tests.conftest import wait_verified
 from traffic_poc.tier1.bundle import import_bundle
 from traffic_poc.web.server import LocalServer
 
@@ -110,3 +111,53 @@ def test_imported_event_frame_and_review(server, tmp_path, image_base64):
         {"decision": "rejected", "reviewer": "tester"},
     ) as response:
         assert json.load(response)["reviews"][0]["decision"] == "rejected"
+
+
+def post_zip(server, path, data):
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{server.server_port}{path}",
+        data=data,
+        headers={"Content-Type": "application/zip"},
+    )
+    return urllib.request.urlopen(req, timeout=5)
+
+
+def test_bundle_upload_queues_verification_and_retry(server, tmp_path, image_base64):
+    source = tmp_path / "frame_0000.png"
+    source.write_bytes(base64.b64decode(image_base64))
+    bundle = export_bundle(
+        [{"frame": 1, "type": "Wrong-Way Driving", "target_id": "ID 8"}],
+        [source],
+        "v41.mov",
+        "CCTV",
+        tmp_path / "bundle.zip",
+    )
+    with post_zip(server, "/api/bundles", bundle.read_bytes()) as response:
+        assert response.status == 201
+        [record_id] = json.load(response)["record_ids"]
+    repository = server.pipeline.repository
+    # The stub returns an Analysis, not a Verification, so the first run fails.
+    verification = wait_verified(server.pipeline, record_id)
+    assert verification["status"] == "failed"
+    server.pipeline.reasoner.raw = json.dumps(
+        {
+            "observations": [{"frame_index": 1, "description": "Car faces traffic"}],
+            "verdict": "supported",
+            "summary": "Wrong-way travel is visible",
+            "limitations": [],
+        }
+    )
+    with request(server, f"/api/records/{record_id}/verify", {}) as response:
+        assert response.status == 202
+    assert wait_verified(server.pipeline, record_id)["status"] == "completed"
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        request(server, f"/api/records/{record_id}/verify", {})
+    assert exc.value.code == 400
+    assert repository.get(record_id)["verification"]["status"] == "completed"
+
+
+def test_bundle_upload_rejects_non_zip(server):
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        post_zip(server, "/api/bundles", b"not a zip")
+    assert exc.value.code == 400
+    assert server.pipeline.repository.list_recent() == []

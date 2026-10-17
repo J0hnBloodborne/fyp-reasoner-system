@@ -3,14 +3,20 @@
 import gc
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from threading import Lock
 from typing import Protocol
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from traffic_poc.config import Settings
 from traffic_poc.records.evidence import Evidence
-from traffic_poc.tier2.prompts import SYSTEM_PROMPT, user_prompt
+from traffic_poc.tier2.prompts import (
+    SYSTEM_PROMPT,
+    VERIFY_SYSTEM_PROMPT,
+    user_prompt,
+    verify_prompt,
+)
 
 
 @dataclass(frozen=True)
@@ -22,6 +28,12 @@ class ModelResponse:
 class Reasoner(Protocol):
     def analyze(self, evidence: Evidence) -> ModelResponse:
         """Analyze validated evidence and return raw output with runtime provenance."""
+        ...
+
+    def verify(
+        self, trigger_type: str, frames: list[tuple[int, str, Path]]
+    ) -> ModelResponse:
+        """Check a Tier-1 trigger against ordered (index, role, path) frames."""
         ...
 
 
@@ -85,23 +97,42 @@ class TorchVLM:
             self._load()
 
     def analyze(self, evidence: Evidence) -> ModelResponse:
+        with Image.open(evidence.image_path) as source:
+            image = source.copy()
+        content = [
+            {"type": "image", "image": image},
+            {"type": "text", "text": user_prompt()},
+        ]
+        return self._generate(SYSTEM_PROMPT, content, self.settings.max_image_edge)
+
+    def verify(
+        self, trigger_type: str, frames: list[tuple[int, str, Path]]
+    ) -> ModelResponse:
+        """Label each frame before its image so the model can cite indices."""
+        edge = self.settings.max_frame_edge
+        content = []
+        for index, role, path in frames:
+            with Image.open(path) as source:
+                image = ImageOps.exif_transpose(source).convert("RGB")
+            image.thumbnail((edge, edge))
+            content.append({"type": "text", "text": f"Frame {index} ({role}):"})
+            content.append({"type": "image", "image": image})
+        prompt = verify_prompt(
+            trigger_type, [(index, role) for index, role, _ in frames]
+        )
+        content.append({"type": "text", "text": prompt})
+        return self._generate(VERIFY_SYSTEM_PROMPT, content, edge)
+
+    def _generate(self, system: str, content: list, image_edge: int) -> ModelResponse:
         """Bound visual input and generation; serialize access to the GPU model."""
         import torch
         import transformers
 
         with self.lock:
             self._load()
-            with Image.open(evidence.image_path) as source:
-                image = source.copy()
             messages = [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "image", "image": image},
-                        {"type": "text", "text": user_prompt()},
-                    ],
-                },
+                {"role": "system", "content": system},
+                {"role": "user", "content": content},
             ]
             torch.cuda.reset_peak_memory_stats()
             started = time.perf_counter()
@@ -150,7 +181,7 @@ class TorchVLM:
                             output_tokens >= self.settings.max_new_tokens
                         ),
                         "max_new_tokens": self.settings.max_new_tokens,
-                        "max_image_edge": self.settings.max_image_edge,
+                        "max_image_edge": image_edge,
                         "vision_grid_thw": inputs.image_grid_thw.tolist(),
                         "do_sample": False,
                     }

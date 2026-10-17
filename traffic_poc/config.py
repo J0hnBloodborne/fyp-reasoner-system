@@ -14,6 +14,7 @@ class Settings:
     model_id: str = "Qwen/Qwen3-VL-2B-Instruct"
     revision: str = "main"
     max_image_edge: int = 768
+    max_frame_edge: int = 448
     max_new_tokens: int = 640
     max_upload_bytes: int = 12 * 1024 * 1024
     max_image_pixels: int = 24_000_000
@@ -29,6 +30,7 @@ class Settings:
             model_id=os.getenv("TRAFFIC_MODEL_ID", "Qwen/Qwen3-VL-2B-Instruct"),
             revision=os.getenv("TRAFFIC_MODEL_REVISION", "main"),
             max_image_edge=int(os.getenv("TRAFFIC_MAX_IMAGE_EDGE", "768")),
+            max_frame_edge=int(os.getenv("TRAFFIC_MAX_FRAME_EDGE", "448")),
             max_new_tokens=int(os.getenv("TRAFFIC_MAX_NEW_TOKENS", "640")),
             offline=os.getenv("TRAFFIC_OFFLINE", "0") == "1",
         )
@@ -36,6 +38,8 @@ class Settings:
     def __post_init__(self) -> None:
         if not 64 <= self.max_image_edge <= 1536:
             raise ValueError("TRAFFIC_MAX_IMAGE_EDGE must be between 64 and 1536")
+        if not 64 <= self.max_frame_edge <= 1536:
+            raise ValueError("TRAFFIC_MAX_FRAME_EDGE must be between 64 and 1536")
         if not 64 <= self.max_new_tokens <= 2048:
             raise ValueError("TRAFFIC_MAX_NEW_TOKENS must be between 64 and 2048")
         if self.max_pending < 1:

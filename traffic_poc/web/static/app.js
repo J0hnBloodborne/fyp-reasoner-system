@@ -59,14 +59,14 @@ function render(record) {
     : record.analysis ? asJSON(record.analysis) : "Waiting for a validated analysis…";
   const e = record.evidence;
   $("dimensions").textContent = imported
-    ? `Evidence: ${e.width}×${e.height}; model copy prepared but not analyzed.`
+    ? `Trigger frame: ${e.width}×${e.height}. Tier-2 sees every frame below, downscaled.`
     : `Original: ${e.width}×${e.height}; model input: ${e.model_width}×${e.model_height}.`;
   $("retry").hidden = record.verification?.status !== "failed";
   $("raw").textContent = imported
     ? record.verification?.raw_response || "No VLM response for this event yet."
     : record.raw_response || "No model response yet.";
   $("caveat").textContent = imported
-    ? "Tier-1 heuristic values are not calibrated probabilities. A still frame cannot establish travel direction or collision timing."
+    ? "Tier-1 heuristic values and Tier-2 verdicts are not calibrated probabilities. A short frame window can miss what happened before or after it."
     : "Confidence is model-reported and uncalibrated. A still image cannot establish direction or signal-crossing history.";
   $("provenance").textContent = asJSON(imported ? record.verification?.provenance ?? record.provenance : record.provenance);
   $("reviews").textContent = record.reviews.length ? asJSON(record.reviews) : "Not reviewed.";
@@ -75,8 +75,9 @@ function render(record) {
   $("reject").textContent = imported ? "Reject candidate" : "Reject record";
   $("correct-label").hidden = imported;
   if (imported) { $("correct").checked = false; $("correction").hidden = true; }
+  const vp = record.verification?.provenance;
   $("timing").textContent = imported
-    ? "Imported trigger only; Tier-1 measurements are not calibrated probabilities."
+    ? vp ? `Verification: ${vp.inference_seconds}s · ${vp.input_tokens} input tokens · peak torch allocation: ${vp.peak_allocated_mib} MiB` : ""
     : record.provenance
     ? `Inference: ${record.provenance.inference_seconds}s · peak torch allocation: ${record.provenance.peak_allocated_mib} MiB`
     : "First analysis may include model loading or downloading.";

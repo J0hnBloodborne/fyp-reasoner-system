@@ -5,7 +5,13 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from traffic_poc.records.schemas import Analysis, Review, parse_analysis
+from traffic_poc.records.schemas import (
+    Analysis,
+    Review,
+    Verification,
+    parse_analysis,
+    parse_verification,
+)
 from traffic_poc.tier2.prompts import SYSTEM_PROMPT, user_prompt
 
 
@@ -70,3 +76,36 @@ def test_absent_motorcycle_is_not_uncertainty():
     assert "If no motorcycle or rider is visible, return no_visible_violation" in (
         SYSTEM_PROMPT
     )
+
+
+def verification(**changes):
+    return {
+        "verdict": "supported",
+        "observations": [{"frame_index": 12, "description": "Car faces traffic"}],
+        "summary": "The car moves against the flow",
+        "limitations": [],
+        **changes,
+    }
+
+
+def test_verification_parses_cited_frames():
+    raw = json.dumps(verification())
+    assert parse_verification(raw, {10, 12}).observations[0].frame_index == 12
+
+
+def test_verification_rejects_frames_not_shown():
+    with pytest.raises(ValueError, match="not shown"):
+        parse_verification(json.dumps(verification()), {10, 11})
+
+
+@pytest.mark.parametrize("verdict", ["supported", "not_supported"])
+def test_decided_verdict_needs_observations(verdict):
+    with pytest.raises(ValidationError):
+        Verification.model_validate(verification(verdict=verdict, observations=[]))
+
+
+def test_insufficient_evidence_may_cite_nothing():
+    result = Verification.model_validate(
+        verification(verdict="insufficient_evidence", observations=[])
+    )
+    assert result.observations == []

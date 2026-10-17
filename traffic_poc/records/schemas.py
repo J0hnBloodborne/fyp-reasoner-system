@@ -36,6 +36,29 @@ class Analysis(Contract):
         return self
 
 
+class Observation(Contract):
+    frame_index: int = Field(ge=1)
+    description: str = Field(min_length=1, max_length=500)
+
+
+class Verification(Contract):
+    verdict: Literal["supported", "not_supported", "insufficient_evidence"]
+    observations: list[Observation] = Field(max_length=12)
+    summary: str = Field(min_length=1, max_length=1500)
+    limitations: list[str] = Field(max_length=12)
+
+    @model_validator(mode="after")
+    def grounded_verdict(self) -> Self:
+        """A decided verdict must cite at least one frame."""
+        if self.verdict != "insufficient_evidence" and not self.observations:
+            raise ValueError("A decided verdict must cite frame observations")
+        if any(not text.strip() or len(text) > 1000 for text in self.limitations):
+            raise ValueError(
+                "Limitations must be nonempty strings under 1000 characters"
+            )
+        return self
+
+
 class Submission(Contract):
     image_base64: str
     filename: str = Field(default="image", min_length=1, max_length=200)
@@ -50,11 +73,24 @@ class Review(Contract):
     corrected_analysis: Analysis | None = None
 
 
-def parse_analysis(raw: str) -> Analysis:
+def _json_object(raw: str):
     """Accept JSON or a single fenced JSON object, never partial prose extraction."""
     candidate = raw.strip()
     if candidate.startswith("```json\n") and candidate.endswith("```"):
         candidate = candidate[8:-3].strip()
     elif candidate.startswith("```\n") and candidate.endswith("```"):
         candidate = candidate[4:-3].strip()
-    return Analysis.model_validate(json.loads(candidate))
+    return json.loads(candidate)
+
+
+def parse_analysis(raw: str) -> Analysis:
+    return Analysis.model_validate(_json_object(raw))
+
+
+def parse_verification(raw: str, frame_indices: set[int]) -> Verification:
+    """Reject observations that cite frames the model was not shown."""
+    verification = Verification.model_validate(_json_object(raw))
+    unknown = {item.frame_index for item in verification.observations} - frame_indices
+    if unknown:
+        raise ValueError(f"Observations cite frames not shown: {sorted(unknown)}")
+    return verification

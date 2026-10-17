@@ -12,13 +12,14 @@ from urllib.parse import urlsplit
 
 from pydantic import ValidationError
 
+from traffic_poc.records.report import build_report
 from traffic_poc.records.schemas import Review, Submission
 from traffic_poc.tier1.bundle import MAX_BUNDLE_BYTES, import_bundle
 from traffic_poc.tier2.pipeline import Pipeline, PipelineBusy
 
 STATIC = Path(__file__).parent / "static"
 RECORD_ROUTE = re.compile(
-    r"/api/records/([a-f0-9]{32})(?:/(image|original|export|review|verify))?"
+    r"/api/records/([a-f0-9]{32})(?:/(image|original|export|report|review|verify))?"
 )
 FRAME_ROUTE = re.compile(r"/api/records/([a-f0-9]{32})/frames/([1-9][0-9]{0,8})")
 logger = logging.getLogger(__name__)
@@ -194,6 +195,13 @@ class Handler(BaseHTTPRequestHandler):
                         "application/json",
                         f"{record_id}.json",
                     )
+                elif action == "report":
+                    self._send(
+                        200,
+                        json.dumps(build_report(record), indent=2).encode(),
+                        "application/json",
+                        f"{record_id}-report.json",
+                    )
                 elif action is None:
                     self._json(200, record)
                 else:
@@ -202,6 +210,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(404, {"error": "Not found"})
         except (KeyError, FileNotFoundError):
             self._json(404, {"error": "Record or evidence not found"})
+        except ValueError as exc:
+            self._json(400, {"error": str(exc)})
         except (BrokenPipeError, ConnectionResetError):
             return
 

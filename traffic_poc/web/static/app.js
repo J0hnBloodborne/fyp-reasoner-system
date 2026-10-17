@@ -7,8 +7,21 @@ let selection = 0;
 const asJSON = value => JSON.stringify(value, null, 2);
 const message = text => { $("message").textContent = text; };
 
+const pending = record => ["queued", "running"].includes(record.status)
+  || ["queued", "running"].includes(record.verification?.status);
+
+function describeVerification(verification) {
+  if (!verification) return "Tier-1 candidate. Tier-2 verification has not been queued.";
+  const lines = [`Tier-2 verification: ${verification.status}`];
+  if (verification.error) lines.push(verification.error);
+  if (verification.result) lines.push(asJSON(verification.result));
+  return lines.join("\n");
+}
+
 async function api(path, body) {
-  const options = body === undefined ? {} : {
+  const options = body === undefined ? {} : body instanceof Blob ? {
+    method: "POST", headers: { "Content-Type": "application/zip" }, body
+  } : {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
   };
   const response = await fetch(path, options);
@@ -42,17 +55,20 @@ function render(record) {
   $("record").hidden = false;
   $("status").textContent = `${record.filename} · ${record.status}${record.error ? " · " + record.error : ""}`;
   $("analysis").textContent = imported
-    ? "Unverified Tier-1 candidate. No VLM analysis has been run for this event."
+    ? describeVerification(record.verification)
     : record.analysis ? asJSON(record.analysis) : "Waiting for a validated analysis…";
   const e = record.evidence;
   $("dimensions").textContent = imported
     ? `Evidence: ${e.width}×${e.height}; model copy prepared but not analyzed.`
     : `Original: ${e.width}×${e.height}; model input: ${e.model_width}×${e.model_height}.`;
-  $("raw").textContent = imported ? "No VLM run for this event." : record.raw_response || "No model response yet.";
+  $("retry").hidden = record.verification?.status !== "failed";
+  $("raw").textContent = imported
+    ? record.verification?.raw_response || "No VLM response for this event yet."
+    : record.raw_response || "No model response yet.";
   $("caveat").textContent = imported
     ? "Tier-1 heuristic values are not calibrated probabilities. A still frame cannot establish travel direction or collision timing."
     : "Confidence is model-reported and uncalibrated. A still image cannot establish direction or signal-crossing history.";
-  $("provenance").textContent = asJSON(record.provenance);
+  $("provenance").textContent = asJSON(imported ? record.verification?.provenance ?? record.provenance : record.provenance);
   $("reviews").textContent = record.reviews.length ? asJSON(record.reviews) : "Not reviewed.";
   $("review").hidden = !["completed", "awaiting_review"].includes(record.status);
   $("approve").textContent = imported ? "Confirm candidate" : "Confirm record";
@@ -104,7 +120,7 @@ async function selectRecord(id) {
     if (token !== selection) return;
     render(record);
     await health();
-    if (["queued", "running"].includes(record.status)) {
+    if (pending(record)) {
       polling = setTimeout(() => poll().catch(error => message(error.message)), 1200);
     } else { await recent(); }
   }
@@ -134,6 +150,28 @@ $("upload").addEventListener("submit", async event => {
     await recent();
   } catch (error) { message(error.message); }
   finally { $("analyze").disabled = false; }
+});
+
+$("bundle").addEventListener("submit", async event => {
+  event.preventDefault();
+  const file = $("bundlefile").files[0];
+  if (!file) return;
+  $("import").disabled = true;
+  message("Importing bundle…");
+  try {
+    const result = await api("/api/bundles", file);
+    message(`Imported ${result.record_ids.length} event(s). Verification runs locally.`);
+    await recent();
+    await selectRecord(result.record_ids[0]);
+  } catch (error) { message(error.message); }
+  finally { $("import").disabled = false; }
+});
+
+$("retry").addEventListener("click", async () => {
+  try {
+    await api(`/api/records/${currentId}/verify`, {});
+    await selectRecord(currentId);
+  } catch (error) { message(error.message); }
 });
 
 $("correct").addEventListener("change", () => { $("correction").hidden = !$("correct").checked; });

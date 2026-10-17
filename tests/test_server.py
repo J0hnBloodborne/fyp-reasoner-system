@@ -184,3 +184,22 @@ def test_report_download_and_upload_rejection(server, tmp_path, image_base64):
     with pytest.raises(urllib.error.HTTPError) as exc:
         request(server, f"/api/records/{upload_id}/report")
     assert exc.value.code == 400
+
+
+def test_search_route_filters_and_rejects_bad_parameters(server, image_base64):
+    with request(server, "/api/records", {"image_base64": image_base64}) as response:
+        record_id = json.load(response)["id"]
+    server.pipeline.wait(record_id)
+    with request(
+        server, "/api/records?q=rider+helmet&source=manual_upload"
+    ) as response:
+        [result] = json.load(response)
+        assert result["id"] == record_id
+        assert result["types"] == ["no_helmet"]
+        assert "[helmet]" in result["snippet"]
+    with request(server, "/api/records?source=tier1_bundle") as response:
+        assert json.load(response) == []
+    for query in ["plate=ABC", "imported_from=yesterday"]:
+        with pytest.raises(urllib.error.HTTPError) as exc:
+            request(server, f"/api/records?{query}")
+        assert exc.value.code == 400

@@ -5,10 +5,11 @@ import logging
 import re
 import tempfile
 import zipfile
+from datetime import date
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from pydantic import ValidationError
 
@@ -22,7 +23,31 @@ RECORD_ROUTE = re.compile(
     r"/api/records/([a-f0-9]{32})(?:/(image|original|export|report|review|verify))?"
 )
 FRAME_ROUTE = re.compile(r"/api/records/([a-f0-9]{32})/frames/([1-9][0-9]{0,8})")
+SEARCH_FILTERS = {
+    "type",
+    "source",
+    "camera_type",
+    "source_video",
+    "verification_status",
+    "verdict",
+    "outcome",
+    "decision",
+}
 logger = logging.getLogger(__name__)
+
+
+def search_options(query: str) -> dict:
+    """Map query parameters to Repository.search arguments; reject unknown ones."""
+    params = {key: values[-1] for key, values in parse_qs(query).items()}
+    unknown = set(params) - SEARCH_FILTERS - {"q", "imported_from", "imported_to"}
+    if unknown:
+        raise ValueError(f"Unknown search parameters: {', '.join(sorted(unknown))}")
+    options = {key: params[key] for key in SEARCH_FILTERS & set(params)}
+    options["query"] = params.get("q")
+    for key in ("imported_from", "imported_to"):
+        if key in params:
+            options[key] = date.fromisoformat(params[key])
+    return options
 
 
 class LocalServer(ThreadingHTTPServer):
@@ -133,7 +158,8 @@ class Handler(BaseHTTPRequestHandler):
         if not self._trusted_request():
             self._json(HTTPStatus.FORBIDDEN, {"error": "Local same-origin access only"})
             return
-        path = urlsplit(self.path).path
+        url = urlsplit(self.path)
+        path = url.path
         pipeline = self.server.pipeline
         try:
             assets = {
@@ -154,7 +180,7 @@ class Handler(BaseHTTPRequestHandler):
                     },
                 )
             elif path == "/api/records":
-                self._json(200, pipeline.repository.search())
+                self._json(200, pipeline.repository.search(**search_options(url.query)))
             elif match := FRAME_ROUTE.fullmatch(path):
                 record_id, frame_index = match.groups()
                 record = pipeline.repository.get(record_id)

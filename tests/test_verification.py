@@ -1,13 +1,12 @@
 """Tier-2 verification of imported Tier-1 events with stub inference."""
 
 import json
-import time
 
 import pytest
 from PIL import Image
 
 from scripts.tier1.export_bundle import export_bundle
-from tests.conftest import StubReasoner
+from tests.conftest import StubReasoner, wait_verified
 from traffic_poc.config import Settings
 from traffic_poc.records.schemas import Submission
 from traffic_poc.records.storage import Repository
@@ -39,16 +38,6 @@ def start(tmp_path, raw=SUPPORTED, **options):
     return Pipeline(
         settings, StubReasoner(raw, **options), Repository(settings.data_dir)
     )
-
-
-def wait_verified(pipeline, record_id, timeout=10):
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        verification = pipeline.repository.get(record_id).get("verification") or {}
-        if verification.get("status") in {"completed", "failed", "skipped"}:
-            return verification
-        time.sleep(0.05)
-    raise TimeoutError(record_id)
 
 
 def test_verification_cites_ordered_frames(tmp_path, bundle):

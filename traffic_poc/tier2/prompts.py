@@ -38,7 +38,7 @@ def prompt_hash() -> str:
     return hashlib.sha256((SYSTEM_PROMPT + "\n" + user_prompt()).encode()).hexdigest()
 
 
-VERIFY_PROMPT_VERSION = "tier1-verification-v1"
+VERIFY_PROMPT_VERSION = "tier1-verification-v2"
 
 VERIFY_SYSTEM_PROMPT = """You check whether a traffic detector's trigger is supported by
 an ordered sequence of frames, for human review, not legal enforcement.
@@ -50,7 +50,10 @@ Return supported only when the frames visibly show the triggered event.
 Return not_supported when the frames visibly show that it did not happen.
 Return insufficient_evidence when resolution, occlusion, lighting or too few frames
 prevent a decision.
-Give each observation the frame_index it comes from. Cite only frames you were shown.
+Put every piece of visual evidence in observations, each with the frame_index it
+comes from. Cite only frames you were shown. supported and not_supported need at
+least one observation. Use at most 6 observations of under 25 words each,
+chosen from the frames that matter. Limitations list only what the frames cannot show.
 Do not infer identities, location, time, legal rules or events outside the frames.
 State relevant limitations. Give only brief observable evidence, not chain-of-thought.
 Output exactly one JSON object matching the supplied schema. No markdown or prose.

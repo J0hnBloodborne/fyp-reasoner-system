@@ -42,8 +42,12 @@ class Observation(Contract):
 
 
 class Verification(Contract):
+    # Evidence precedes the verdict so the model writes observations first.
+    observations: list[Observation] = Field(
+        max_length=12,
+        description="What is visible in specific frames, including absent contact",
+    )
     verdict: Literal["supported", "not_supported", "insufficient_evidence"]
-    observations: list[Observation] = Field(max_length=12)
     summary: str = Field(min_length=1, max_length=1500)
     limitations: list[str] = Field(max_length=12)
 

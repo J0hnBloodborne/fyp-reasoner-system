@@ -18,13 +18,17 @@
       <label>Capture time (optional, include timezone) <input id="captured" placeholder="2026-09-19T10:00:00+05:00" maxlength="100"></label>
       <button id="analyze" type="submit">Analyze image</button>
     </form>
+    <form id="bundle">
+      <label>Tier-1 bundle (ZIP) <input id="bundlefile" type="file" accept=".zip,application/zip" required></label>
+      <button id="import" type="submit">Import and verify</button>
+    </form>
     <p id="message" role="status" aria-live="polite"></p>
     <section id="record" hidden>
       <h2>Evidence and findings</h2>
       <p id="status"></p>
       <div class="comparison">
         <figure><img id="evidence" alt="Uploaded traffic evidence"><figcaption id="dimensions"></figcaption></figure>
-        <div><pre id="analysis"></pre><p id="timing" class="muted"></p></div>
+        <div><pre id="analysis"></pre><button id="retry" type="button" hidden>Retry verification</button><p id="timing" class="muted"></p></div>
       </div>
       <section id="tier1" hidden>
         <h2>Tier-1 trigger</h2>

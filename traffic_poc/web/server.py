@@ -130,12 +130,7 @@ class Handler(BaseHTTPRequestHandler):
                 if frame is None:
                     self._json(404, {"error": "Evidence frame not found"})
                 else:
-                    filename = (
-                        f"{record_id}.original"
-                        if frame["role"] == "trigger"
-                        else f"{record_id}.frame-{frame['frame_index']:06d}.original"
-                    )
-                    file = pipeline.settings.data_dir / "evidence" / filename
+                    file = pipeline.settings.data_dir / "evidence" / frame["file"]
                     self._send(200, file.read_bytes(), frame["media_type"])
             elif match := RECORD_ROUTE.fullmatch(path):
                 record_id, action = match.groups()

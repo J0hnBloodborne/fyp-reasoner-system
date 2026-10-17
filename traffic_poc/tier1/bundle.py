@@ -152,12 +152,7 @@ def import_bundle(path: Path, settings: Settings, repository: Repository) -> lis
                     "Bundle ID was already imported with different content"
                 )
             for frame in existing["tier1_event"]["frames"]:
-                filename = (
-                    f"{record_id}.original"
-                    if frame["role"] == "trigger"
-                    else f"{record_id}.frame-{frame['frame_index']:06d}.original"
-                )
-                saved = directory / filename
+                saved = directory / frame["file"]
                 if (
                     not saved.is_file()
                     or hashlib.sha256(saved.read_bytes()).hexdigest() != frame["sha256"]

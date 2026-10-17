@@ -81,6 +81,7 @@ function render(record) {
     ? `Inference: ${record.provenance.inference_seconds}s · peak torch allocation: ${record.provenance.peak_allocated_mib} MiB`
     : "First analysis may include model loading or downloading.";
   $("tier1").hidden = !imported;
+  $("report").hidden = $("report-sep").hidden = !imported;
   $("tier1frames").replaceChildren();
   if (imported) {
     const event = record.tier1_event;
@@ -114,6 +115,7 @@ async function selectRecord(id) {
   $("notes").value = "";
   $("evidence").src = `/api/records/${id}/image`;
   $("export").href = `/api/records/${id}/export`;
+  $("report").href = `/api/records/${id}/report`;
   $("original").href = `/api/records/${id}/original`;
   async function poll() {
     const record = await api(`/api/records/${id}`);

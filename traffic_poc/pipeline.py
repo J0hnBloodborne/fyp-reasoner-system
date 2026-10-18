@@ -9,6 +9,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 from traffic_poc.config import Settings
+from traffic_poc.lease import RuntimeLease
 from traffic_poc.records.evidence import ingest_image
 from traffic_poc.records.schemas import (
     Submission,
@@ -16,9 +17,8 @@ from traffic_poc.records.schemas import (
     parse_verification,
 )
 from traffic_poc.records.storage import Repository, now
-from traffic_poc.tier2.inference import Reasoner
-from traffic_poc.tier2.lease import RuntimeLease
-from traffic_poc.tier2.prompts import (
+from traffic_poc.vlm.model import Reasoner
+from traffic_poc.vlm.prompts import (
     PROMPT_VERSION,
     VERIFY_PROMPT_VERSION,
     prompt_hash,

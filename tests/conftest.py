@@ -9,9 +9,9 @@ import pytest
 from PIL import Image
 
 from traffic_poc.config import Settings
+from traffic_poc.pipeline import Pipeline
 from traffic_poc.records.storage import Repository
-from traffic_poc.tier2.inference import ModelResponse
-from traffic_poc.tier2.pipeline import Pipeline
+from traffic_poc.vlm.model import ModelResponse
 
 
 @pytest.fixture

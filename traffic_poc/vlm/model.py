@@ -11,7 +11,7 @@ from PIL import Image, ImageOps
 
 from traffic_poc.config import Settings
 from traffic_poc.records.evidence import Evidence
-from traffic_poc.tier2.prompts import (
+from traffic_poc.vlm.prompts import (
     SYSTEM_PROMPT,
     VERIFY_SYSTEM_PROMPT,
     user_prompt,

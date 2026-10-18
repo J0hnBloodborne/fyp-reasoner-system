@@ -14,9 +14,9 @@ from urllib.parse import parse_qs, urlsplit
 from pydantic import ValidationError
 
 from traffic_poc.detection.bundle import MAX_BUNDLE_BYTES, import_bundle
+from traffic_poc.pipeline import Pipeline, PipelineBusy
 from traffic_poc.records.report import build_report
 from traffic_poc.records.schemas import Review, Submission
-from traffic_poc.tier2.pipeline import Pipeline, PipelineBusy
 
 STATIC = Path(__file__).parent / "static"
 RECORD_ROUTE = re.compile(

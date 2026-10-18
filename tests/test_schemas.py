@@ -12,7 +12,7 @@ from traffic_poc.records.schemas import (
     parse_analysis,
     parse_verification,
 )
-from traffic_poc.tier2.prompts import SYSTEM_PROMPT, user_prompt, verify_prompt
+from traffic_poc.vlm.prompts import SYSTEM_PROMPT, user_prompt, verify_prompt
 
 
 def test_plain_and_fenced_json(candidate):

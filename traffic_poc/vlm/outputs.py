@@ -1,13 +1,11 @@
-"""Versioned contracts shared by inference, storage, and review."""
+"""Validated VLM output contracts and their strict JSON parsers."""
 
 import json
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import Field, model_validator
 
-
-class Contract(BaseModel):
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, strict=True)
+from traffic_poc.contract import Contract
 
 
 class Finding(Contract):
@@ -61,20 +59,6 @@ class Verification(Contract):
                 "Limitations must be nonempty strings under 1000 characters"
             )
         return self
-
-
-class Submission(Contract):
-    image_base64: str
-    filename: str = Field(default="image", min_length=1, max_length=200)
-    location: str | None = Field(default=None, max_length=200)
-    captured_at: str | None = Field(default=None, max_length=100)
-
-
-class Review(Contract):
-    decision: Literal["approved", "rejected"]
-    reviewer: str = Field(min_length=1, max_length=100)
-    notes: str = Field(default="", max_length=2000)
-    corrected_analysis: Analysis | None = None
 
 
 def _json_object(raw: str):

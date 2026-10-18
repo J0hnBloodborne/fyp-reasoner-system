@@ -11,7 +11,7 @@ from traffic_poc.detection.bundle import import_bundle
 from traffic_poc.detection.export_bundle import export_bundle
 from traffic_poc.pipeline import Pipeline
 from traffic_poc.records.report import build_report
-from traffic_poc.records.schemas import Review
+from traffic_poc.records.reviews import Review
 from traffic_poc.records.storage import Repository
 
 VERIFICATION = {
@@ -94,7 +94,7 @@ def test_report_without_fps_or_verification(tmp_path, record_id):
 
 
 def test_uploads_have_no_incident_report(pipeline, image_base64):
-    from traffic_poc.records.schemas import Submission
+    from traffic_poc.pipeline import Submission
 
     record = pipeline.wait(pipeline.submit(Submission(image_base64=image_base64)))
     with pytest.raises(ValueError, match="Tier-1"):

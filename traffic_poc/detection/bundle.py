@@ -11,8 +11,8 @@ from PIL import Image
 from pydantic import Field, model_validator
 
 from traffic_poc.config import Settings
+from traffic_poc.contract import Contract
 from traffic_poc.records.evidence import decode_image, ingest_bytes
-from traffic_poc.records.schemas import Contract
 from traffic_poc.records.storage import Repository, now
 
 MAX_MANIFEST_BYTES = 1024 * 1024

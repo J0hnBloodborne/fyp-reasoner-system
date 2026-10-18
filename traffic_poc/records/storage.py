@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
-from traffic_poc.records.schemas import Review
+from traffic_poc.records.reviews import Review
 from traffic_poc.records.search import match_query, search_text, summarize
 
 

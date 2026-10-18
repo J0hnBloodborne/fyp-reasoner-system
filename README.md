@@ -21,8 +21,8 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-.\.venv\Scripts\python.exe -m scripts.tier2.download_model
-.\.venv\Scripts\python.exe -m traffic_poc --warmup
+.\.venv\Scripts\python.exe -m traffic_poc download-model
+.\.venv\Scripts\python.exe -m traffic_poc serve --warmup
 ```
 
 Open <http://127.0.0.1:8000>. The application binds to loopback only. The first model
@@ -32,7 +32,7 @@ access from the model loader after downloading:
 
 ```powershell
 $env:TRAFFIC_OFFLINE = "1"
-.\.venv\Scripts\python.exe -m traffic_poc --warmup
+.\.venv\Scripts\python.exe -m traffic_poc serve --warmup
 ```
 
 If the Hugging Face Xet transfer stalls, use the documented HTTP fallback before
@@ -40,7 +40,7 @@ running the downloader:
 
 ```powershell
 $env:HF_HUB_DISABLE_XET = "1"
-.\.venv\Scripts\python.exe -m scripts.tier2.download_model
+.\.venv\Scripts\python.exe -m traffic_poc download-model
 ```
 
 The downloader resumes partial artifacts through the Hugging Face cache.
@@ -86,29 +86,33 @@ human review ← SQLite record ← schema validation ← raw output + provenance
 Tier-1 ZIP bundle → verified event/evidence importer → unverified review record
 ```
 
-The code is grouped by feature, with records shared by both stages:
+The code is grouped by what it does. Every command runs through
+`python -m traffic_poc <command>`:
 
 ```text
 traffic_poc/
-  records/  contracts, evidence validation, SQLite review history
-  tier1/    versioned detector bundle contract and importer
-  tier2/    VLM adapter, prompt, bounded inference pipeline
-  web/      local HTTP transport and plain HTML interface
-  config.py shared runtime settings
-scripts/
-  tier1/    Colab export, local import, notebook-preview adapter
-  tier2/    model download and GPU smoke check
+  cli.py        serve | detect | import | download-model | smoke
+  config.py     runtime settings from environment variables
+  contract.py   strict Pydantic base for every validated contract
+  pipeline.py   job queue for image uploads and Tier-1 verification
+  lease.py      one pipeline per data directory
+  detection/    Tier-1: YOLO heuristics, video loop, bundle format
+  vlm/          Tier-2: model adapter, prompts, output contracts
+  records/      SQLite store, evidence files, reviews, search, reports
+  web/          local HTTP server and browser UI
+scripts/        PowerShell setup and verify-and-run helpers
 ```
 
-The web layer calls the workflows; both stages use `records/` for evidence and
-persistence. Torch tensors stay inside `tier2/inference.py`. Invalid model output
-becomes an inspectable failed record, and reviews append without replacing it.
+Dependencies point one way: `cli` and `web` call `pipeline`, which uses
+`detection`, `vlm` and `records`, which use `config` and `contract`. Torch
+tensors stay inside `vlm/model.py`. Invalid model output becomes an
+inspectable failed record, and reviews append without replacing it.
 
 ## Tier-1 handoff
 
 The attached Colab notebook currently prints `violations` and keeps trigger
 images in memory; it does not export a durable event/evidence handoff. To create
-one, upload `scripts/tier1/export_bundle.py` into the Colab working directory
+one, upload `traffic_poc/detection/export_bundle.py` into the Colab working directory
 and run this **after** its final detection cell (which defines `violations`,
 `test_frames`, `video_path` and `CAMERA_TYPE`):
 
@@ -138,7 +142,7 @@ pixel displacement for wrong-way events and IoU for collision events.
 Transfer the ZIP to the local machine and run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m scripts.tier1.import_bundle path\to\tier1_events.zip
+.\.venv\Scripts\python.exe -m traffic_poc import path\to\tier1_events.zip
 ```
 
 The command prints stable record IDs and can be rerun on the same ZIP without
@@ -189,7 +193,7 @@ optimization and model architecture changes are separate from this application.
 .\.venv\Scripts\ruff.exe check .
 .\.venv\Scripts\ruff.exe format --check .
 node --check traffic_poc/web/static/app.js
-.\.venv\Scripts\python.exe -m scripts.tier2.smoke_model path\to\image.jpg --runs 2
+.\.venv\Scripts\python.exe -m traffic_poc smoke path\to\image.jpg --runs 2
 ```
 
 Unit/integration tests use stub inference and never download a model. The separate

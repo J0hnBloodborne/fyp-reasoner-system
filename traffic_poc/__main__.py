@@ -5,7 +5,7 @@ import logging
 
 from traffic_poc.config import Settings
 from traffic_poc.pipeline import Pipeline
-from traffic_poc.records.storage import Repository
+from traffic_poc.records.store import Repository
 from traffic_poc.vlm.model import TorchVLM
 from traffic_poc.web.server import LocalServer
 

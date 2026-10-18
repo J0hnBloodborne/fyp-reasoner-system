@@ -1,6 +1,6 @@
 """Incident report combining Tier-1 detection, Tier-2 verification and reviews."""
 
-from traffic_poc.records.storage import now
+from traffic_poc.records.store import now
 
 REPORT_VERSION = "1.0"
 

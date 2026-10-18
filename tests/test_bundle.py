@@ -10,7 +10,7 @@ from traffic_poc.config import Settings
 from traffic_poc.detection.bundle import import_bundle
 from traffic_poc.detection.export_bundle import export_bundle
 from traffic_poc.records.reviews import Review
-from traffic_poc.records.storage import Repository
+from traffic_poc.records.store import Repository
 
 
 @pytest.fixture

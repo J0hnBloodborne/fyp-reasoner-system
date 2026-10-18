@@ -13,7 +13,7 @@ from pydantic import Field, model_validator
 from traffic_poc.config import Settings
 from traffic_poc.contract import Contract
 from traffic_poc.records.evidence import decode_image, ingest_bytes
-from traffic_poc.records.storage import Repository, now
+from traffic_poc.records.store import Repository, now
 
 MAX_MANIFEST_BYTES = 1024 * 1024
 MAX_BUNDLE_BYTES = 256 * 1024 * 1024

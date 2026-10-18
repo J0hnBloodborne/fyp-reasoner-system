@@ -14,7 +14,7 @@ from traffic_poc.config import Settings
 from traffic_poc.contract import Contract
 from traffic_poc.lease import RuntimeLease
 from traffic_poc.records.evidence import ingest_image
-from traffic_poc.records.storage import Repository, now
+from traffic_poc.records.store import Repository, now
 from traffic_poc.vlm.model import Reasoner
 from traffic_poc.vlm.outputs import parse_analysis, parse_verification
 from traffic_poc.vlm.prompts import (

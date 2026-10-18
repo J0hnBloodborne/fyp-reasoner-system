@@ -9,7 +9,7 @@ from tests.conftest import StubReasoner
 from traffic_poc.config import Settings
 from traffic_poc.pipeline import Pipeline, PipelineBusy, Submission
 from traffic_poc.records.reviews import Review
-from traffic_poc.records.storage import Repository, now
+from traffic_poc.records.store import Repository, now
 from traffic_poc.vlm.model import ModelResponse
 
 

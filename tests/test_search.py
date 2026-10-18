@@ -6,7 +6,7 @@ import pytest
 
 from traffic_poc.records.reviews import Review
 from traffic_poc.records.search import match_query
-from traffic_poc.records.storage import Repository
+from traffic_poc.records.store import Repository
 
 
 def tier1(record_id, created_at, trigger, camera, verdict, observation):

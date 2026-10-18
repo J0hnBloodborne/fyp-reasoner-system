@@ -9,7 +9,7 @@ from pathlib import Path
 from traffic_poc.config import Settings
 from traffic_poc.pipeline import Pipeline, Submission
 from traffic_poc.records.reviews import Review
-from traffic_poc.records.storage import Repository
+from traffic_poc.records.store import Repository
 from traffic_poc.vlm.model import TorchVLM
 
 

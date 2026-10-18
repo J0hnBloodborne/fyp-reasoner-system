@@ -6,7 +6,7 @@ from pathlib import Path
 
 from traffic_poc.config import Settings
 from traffic_poc.detection.bundle import import_bundle
-from traffic_poc.records.storage import Repository
+from traffic_poc.records.store import Repository
 
 
 def main() -> None:

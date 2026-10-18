@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from scripts.tier1.detect import Detector
+from traffic_poc.detection.detector import Detector
 
 FRAME = np.zeros((480, 640, 3), dtype=np.uint8)
 CAR = 2

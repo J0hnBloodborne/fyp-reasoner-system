@@ -8,9 +8,9 @@ import urllib.request
 
 import pytest
 
-from scripts.tier1.export_bundle import export_bundle
 from tests.conftest import wait_verified
-from traffic_poc.tier1.bundle import import_bundle
+from traffic_poc.detection.bundle import import_bundle
+from traffic_poc.detection.export_bundle import export_bundle
 from traffic_poc.web.server import LocalServer
 
 

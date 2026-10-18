@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 
 from traffic_poc.config import Settings
+from traffic_poc.detection.bundle import import_bundle
 from traffic_poc.records.storage import Repository
-from traffic_poc.tier1.bundle import import_bundle
 
 
 def main() -> None:

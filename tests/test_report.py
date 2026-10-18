@@ -5,13 +5,13 @@ import json
 import pytest
 from PIL import Image
 
-from scripts.tier1.export_bundle import export_bundle
 from tests.conftest import StubReasoner, wait_verified
 from traffic_poc.config import Settings
+from traffic_poc.detection.bundle import import_bundle
+from traffic_poc.detection.export_bundle import export_bundle
 from traffic_poc.records.report import build_report
 from traffic_poc.records.schemas import Review
 from traffic_poc.records.storage import Repository
-from traffic_poc.tier1.bundle import import_bundle
 from traffic_poc.tier2.pipeline import Pipeline
 
 VERIFICATION = {

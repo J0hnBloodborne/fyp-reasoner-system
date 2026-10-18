@@ -20,8 +20,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Application dependency installation failed' }
 if ($LASTEXITCODE -ne 0) { throw 'CUDA verification failed' }
 
 if (-not $SkipModel) {
-    & $venvPython -m scripts.tier2.download_model
+    & $venvPython -m traffic_poc download-model
     if ($LASTEXITCODE -ne 0) { throw 'Model download failed; rerun to resume' }
 }
 
-Write-Host 'Setup complete. Run: .\.venv\Scripts\python.exe -m traffic_poc --warmup'
+Write-Host 'Setup complete. Run: .\.venv\Scripts\python.exe -m traffic_poc serve --warmup'

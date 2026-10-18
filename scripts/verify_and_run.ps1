@@ -33,9 +33,9 @@ if ($WaitForModelPid -gt 0) {
 $env:TRAFFIC_OFFLINE = '1'
 $sampleImage = Join-Path $projectRoot 'data\samples\bus.jpg'
 if (Test-Path -LiteralPath $sampleImage) {
-    & $venvPython -m scripts.tier2.smoke_model $sampleImage --runs 2
+    & $venvPython -m traffic_poc smoke $sampleImage --runs 2
     if ($LASTEXITCODE -ne 0) { throw 'Real model smoke check failed' }
 }
 
-& $venvPython -m traffic_poc --port $Port --warmup
+& $venvPython -m traffic_poc serve --port $Port --warmup
 if ($LASTEXITCODE -ne 0) { throw 'Application startup failed' }

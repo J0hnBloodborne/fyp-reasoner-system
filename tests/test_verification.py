@@ -9,9 +9,9 @@ from tests.conftest import StubReasoner, wait_verified
 from traffic_poc.config import Settings
 from traffic_poc.detection.bundle import import_bundle
 from traffic_poc.detection.export_bundle import export_bundle
+from traffic_poc.pipeline import Pipeline
 from traffic_poc.records.schemas import Submission
 from traffic_poc.records.storage import Repository
-from traffic_poc.tier2.pipeline import Pipeline
 
 SUPPORTED = {
     "observations": [{"frame_index": 3, "description": "Car faces oncoming traffic"}],

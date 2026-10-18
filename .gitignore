@@ -14,3 +14,4 @@ data/
 *.sqlite3-*
 *.log
 .kilo/
+graphify-out/

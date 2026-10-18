@@ -1,7 +1,5 @@
 """Tier-1 export/import contract tests; no detector or VLM is loaded."""
 
-import base64
-import io
 import json
 import zipfile
 
@@ -9,7 +7,6 @@ import pytest
 from PIL import Image
 
 from scripts.tier1.export_bundle import export_bundle
-from scripts.tier1.notebook_preview import export_preview_bundle
 from traffic_poc.config import Settings
 from traffic_poc.records.schemas import Review
 from traffic_poc.records.storage import Repository
@@ -102,42 +99,6 @@ def test_export_preserves_raw_measurement_name(tmp_path, bundle):
     assert manifest["events"][0]["heuristic_value"] == 21.52
     assert manifest["events"][0]["trigger_type"] == "Wrong-Way Driving"
     assert manifest["evidence_origin"] == "raw_frame"
-
-
-def test_notebook_preview_adapter_marks_nonoriginal_evidence(tmp_path):
-    buffer = io.BytesIO()
-    Image.new("RGB", (24, 16), "red").save(buffer, format="PNG")
-    image = base64.b64encode(buffer.getvalue()).decode() + "\n"
-    notebook = {
-        "cells": [
-            {
-                "outputs": [
-                    {
-                        "output_type": "stream",
-                        "text": [
-                            "Evaluating 50 frames in CCTV mode...\n"
-                            "TIER-1 BENCHMARK INCIDENT REPORT\n"
-                            " frame                    type target_id  confidence\n"
-                            "    39       Wrong-Way Driving      ID 8       21.52\n"
-                            "\n[EVIDENCE] Wrong-Way-8:\n"
-                        ],
-                    },
-                    {"output_type": "display_data", "data": {"image/png": image}},
-                ]
-            }
-        ]
-    }
-    notebook_path = tmp_path / "notebook.ipynb"
-    notebook_path.write_text(json.dumps(notebook), encoding="utf-8")
-    bundle = export_preview_bundle(
-        notebook_path, tmp_path / "preview.zip", "v41.mov", "CCTV"
-    )
-    settings = Settings(data_dir=tmp_path / "data")
-    record_id = import_bundle(bundle, settings, Repository(settings.data_dir))[0]
-    record = Repository(settings.data_dir).get(record_id)
-    assert record["tier1_event"]["evidence_origin"] == "annotated_preview"
-    assert record["tier1_event"]["trigger_frame"] == 39
-    assert len(record["tier1_event"]["frames"]) == 1
 
 
 def test_export_never_overwrites_existing_bundle(tmp_path, bundle, frame_paths):

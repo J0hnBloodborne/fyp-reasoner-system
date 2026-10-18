@@ -141,19 +141,6 @@ Transfer the ZIP to the local machine and run:
 .\.venv\Scripts\python.exe -m scripts.tier1.import_bundle path\to\tier1_events.zip
 ```
 
-For the **already-executed attached notebook**, the source video and extracted
-frames were not attached, but the notebook contains two displayed trigger
-previews. To demo the handoff without rerunning Colab:
-
-```powershell
-.\.venv\Scripts\python.exe -m scripts.tier1.notebook_preview F:\Downloads\Untitled18.ipynb data\tier1_notebook_preview.zip --source-video v41.mov --camera-type CCTV
-.\.venv\Scripts\python.exe -m scripts.tier1.import_bundle data\tier1_notebook_preview.zip
-```
-
-These are **540×320 annotated previews**, not original frames or a motion
-sequence. Their records are marked `annotated_preview` and must not be used for
-VLM verification or a final violation decision.
-
 The command prints stable record IDs and can be rerun on the same ZIP without
 duplicating records. Open <http://127.0.0.1:8000> and select an imported record
 to see the trigger, context frames and review controls. Import does not load

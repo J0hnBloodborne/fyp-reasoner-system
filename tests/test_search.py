@@ -4,7 +4,7 @@ from datetime import date
 
 import pytest
 
-from traffic_poc.records.schemas import Review
+from traffic_poc.records.reviews import Review
 from traffic_poc.records.search import match_query
 from traffic_poc.records.storage import Repository
 

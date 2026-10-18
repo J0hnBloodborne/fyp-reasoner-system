@@ -8,16 +8,15 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
+from pydantic import Field
+
 from traffic_poc.config import Settings
+from traffic_poc.contract import Contract
 from traffic_poc.lease import RuntimeLease
 from traffic_poc.records.evidence import ingest_image
-from traffic_poc.records.schemas import (
-    Submission,
-    parse_analysis,
-    parse_verification,
-)
 from traffic_poc.records.storage import Repository, now
 from traffic_poc.vlm.model import Reasoner
+from traffic_poc.vlm.outputs import parse_analysis, parse_verification
 from traffic_poc.vlm.prompts import (
     PROMPT_VERSION,
     VERIFY_PROMPT_VERSION,
@@ -26,6 +25,13 @@ from traffic_poc.vlm.prompts import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class Submission(Contract):
+    image_base64: str
+    filename: str = Field(default="image", min_length=1, max_length=200)
+    location: str | None = Field(default=None, max_length=200)
+    captured_at: str | None = Field(default=None, max_length=100)
 
 
 class PipelineBusy(Exception):

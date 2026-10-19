@@ -1,0 +1,116 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 var(--fs-md) / 1.45 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4, p, ul, ol, dl, dd, figure { margin: 0; }
+ul, ol { padding: 0; }
+img { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: inherit; }
+code, pre, .mono { font-family: var(--mono); }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.skip-link { position: absolute; left: 8px; top: -60px; z-index: 50; padding: 8px 12px; background: var(--fg); color: var(--bg); font-weight: 700; }
+.skip-link:focus { top: 8px; }
+
+.muted { color: var(--muted); }
+.eyebrow {
+  font: 700 var(--fs-xs) / 1 var(--font);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Buttons: heavy sign-like borders, square corners, instant state changes. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 34px; padding: 6px 12px;
+  border: 2px solid var(--fg); background: transparent; color: var(--fg);
+  font-weight: 700; font-size: var(--fs-md); line-height: 1;
+  text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { background: var(--fg); color: var(--bg); }
+.btn--primary { background: var(--green); border-color: var(--green); color: var(--green-ink); }
+.btn--primary:hover { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.btn--small { min-height: 28px; padding: 4px 9px; font-size: var(--fs-sm); }
+.btn:disabled, .btn[aria-disabled="true"] {
+  border-color: var(--line); background: transparent; color: var(--muted); cursor: not-allowed;
+}
+
+.link-button {
+  border: 0; padding: 0; background: none; color: inherit; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px; font-weight: 600;
+}
+
+/* Fields */
+.field { display: grid; gap: 5px; font-size: var(--fs-sm); font-weight: 600; }
+.field input, .field textarea, .field select {
+  width: 100%; min-width: 0; padding: 8px 10px;
+  border: 2px solid var(--fg); background: var(--surface); color: var(--fg);
+  font-weight: 400; font-size: var(--fs-md);
+}
+.field textarea { resize: vertical; }
+.field .hint { font-weight: 400; color: var(--muted); }
+.field--error input, .field--error textarea { border-color: var(--amber); }
+.error-text, .field .error-text {
+  display: flex; gap: 8px; align-items: baseline;
+  font-weight: 400; font-size: var(--fs-sm); color: var(--fg);
+}
+.error-text::before {
+  content: ""; flex: none; width: 9px; height: 9px; align-self: center;
+  background: var(--amber); box-shadow: inset 0 0 0 1.5px var(--amber-ink); transform: rotate(45deg);
+}
+
+/* Verdict signs. The shape carries the meaning before the colour does:
+   green guide panel, white regulatory plate, amber warning diamond, outline. */
+.sign {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 8px;
+  font: 700 var(--fs-xs) / 1 var(--font); letter-spacing: 0.05em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.sign--supported { background: var(--green); color: var(--green-ink); box-shadow: inset 0 0 0 2px var(--green), inset 0 0 0 3.5px var(--green-ink); }
+.sign--not_supported { background: var(--plate); color: var(--plate-ink); box-shadow: inset 0 0 0 2px var(--plate-ink); }
+.sign--insufficient_evidence { padding-left: 2px; color: var(--fg); }
+.sign--insufficient_evidence::before {
+  content: ""; flex: none; width: 12px; height: 12px; margin: 0 2px 0 3px;
+  background: var(--amber); box-shadow: inset 0 0 0 2px var(--amber-ink); transform: rotate(45deg);
+}
+.sign--pending, .sign--unverified, .sign--skipped, .sign--failed { color: var(--muted); box-shadow: inset 0 0 0 2px var(--line); }
+.sign--failed { color: var(--fg); box-shadow: inset 0 0 0 2px var(--amber); }
+.sign--large { padding: 7px 11px; font-size: var(--fs-sm); }
+
+/* Skeleton blocks for loading states. */
+.skeleton { display: grid; gap: 8px; }
+.skeleton i { display: block; height: 12px; background: var(--line-soft); animation: pulse 1.6s ease-in-out infinite; }
+.skeleton i:nth-child(2) { width: 82%; }
+.skeleton i:nth-child(3) { width: 64%; }
+@keyframes pulse { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) {
+  .skeleton i { animation: none; }
+}
+
+/* Key/value plate used for detection metadata and provenance. */
+.plate { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); }
+.plate > div { display: grid; gap: 2px; padding: 7px 9px; background: var(--surface); min-width: 0; }
+.plate dt { font-size: var(--fs-xs); color: var(--muted); }
+.plate dd { font: 500 var(--fs-sm) / 1.3 var(--mono); overflow-wrap: anywhere; }
+.plate .wide { grid-column: 1 / -1; }
+
+kbd {
+  display: inline-block; min-width: 1.5em; padding: 1px 5px; text-align: center;
+  font: 600 var(--fs-xs) / 1.4 var(--mono);
+  border: 1px solid var(--line); border-bottom-width: 2px; background: var(--surface); color: var(--fg);
+}

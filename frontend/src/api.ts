@@ -13,6 +13,7 @@ export interface RecordSummary {
   source: "tier1_bundle" | "manual_upload" | null;
   types: string[];
   bundle_id: string | null;
+  video_id: string | null;
   source_video: string | null;
   camera_type: "CCTV" | "DASHCAM" | null;
   frame_count: number | null;
@@ -49,6 +50,7 @@ export interface Tier1Event {
   heuristic_value: number | null;
   heuristic_value_kind: string;
   frames: Frame[];
+  video_id?: string | null;
 }
 
 export interface Observation {
@@ -145,6 +147,23 @@ export interface Report {
   custody_log: CustodyEntry[];
 }
 
+export type VideoStatus = "queued" | "preview" | "extracting" | "detecting" | "importing" | "completed" | "failed";
+
+export interface Video {
+  id: string;
+  created_at: string;
+  status: VideoStatus;
+  filename: string;
+  preview: string | null;
+  camera_type: "CCTV" | "DASHCAM";
+  progress: { stage: string; done: number; total: number } | null;
+  fps: number | null;
+  frame_count: number | null;
+  event_count: number | null;
+  record_ids: string[];
+  error: string | null;
+}
+
 export interface Health {
   model_id: string;
   model_state: "not_loaded" | "loading" | "ready" | "load_failed" | "external";
@@ -189,6 +208,8 @@ export const api = {
   },
   record: (id: string) => request<RecordDetail>(`/api/records/${id}`),
   report: (id: string) => request<Report>(`/api/records/${id}/report`),
+  videos: () => request<Video[]>("/api/videos"),
+  video: (id: string) => request<Video>(`/api/videos/${id}`),
   review: (id: string, body: { decision: Decision; reviewer: string; notes: string; corrected_analysis: Analysis | null }) =>
     postJSON<RecordDetail>(`/api/records/${id}/review`, body),
   verify: (id: string) => postJSON<RecordDetail>(`/api/records/${id}/verify`, {}),
@@ -204,7 +225,31 @@ export const files = {
   original: (id: string) => `/api/records/${id}/original`,
   record: (id: string) => `/api/records/${id}/export`,
   report: (id: string) => `/api/records/${id}/report`,
+  video: (id: string) => `/api/videos/${id}/stream`,
 };
+
+export const MAX_VIDEO_BYTES = 2 * 1024 ** 3;
+
+/** Upload with progress (fetch cannot report upload progress). */
+export function uploadVideo(
+  file: File, options: { camera_type: string; allowed_direction: string }, onProgress: (fraction: number) => void,
+) {
+  return new Promise<Video>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `/api/videos?${new URLSearchParams(options)}`);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.setRequestHeader("X-Filename", encodeURIComponent(file.name));
+    xhr.upload.onprogress = (event) => event.lengthComputable && onProgress(event.loaded / event.total);
+    xhr.onload = () => {
+      let body: { error?: string } | Video | null = null;
+      try { body = JSON.parse(xhr.responseText); } catch { /* not JSON */ }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body as Video);
+      else reject(new ApiError((body as { error?: string } | null)?.error ?? `Upload failed with status ${xhr.status}`, xhr.status));
+    };
+    xhr.onerror = () => reject(new ApiError("The local server is not responding. Start it with python -m traffic_poc serve.", 0));
+    xhr.send(file);
+  });
+}
 
 export const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 export const MAX_BUNDLE_BYTES = 256 * 1024 * 1024;

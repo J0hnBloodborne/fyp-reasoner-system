@@ -11,7 +11,7 @@ function ThemeToggle() {
     setTheme(next);
   }
   return (
-    <button type="button" className="topbar__theme" aria-pressed={dark} onClick={toggle}>
+    <button type="button" className="btn btn--small" aria-pressed={dark} onClick={toggle}>
       {dark ? "Light theme" : "Dark theme"}
     </button>
   );
@@ -24,10 +24,10 @@ export function Header({ path }: { path: string }) {
       <Link href="/" className="topbar__brand">TrafficSeek</Link>
       <nav className="topbar__nav" aria-label="Main">
         <Link href="/" aria-current={searchActive ? "page" : undefined}>Search</Link>
-        <Link href="/import" aria-current={path === "/import" ? "page" : undefined}>Import</Link>
+        <Link href="/import" aria-current={path === "/import" ? "page" : undefined}>Add footage</Link>
       </nav>
       <div className="topbar__end">
-        <Link href="/analyze" className="topbar__secondary" aria-current={path === "/analyze" ? "page" : undefined}>
+        <Link href="/analyze" className="btn btn--small topbar__secondary" aria-current={path === "/analyze" ? "page" : undefined}>
           Analyze an image
         </Link>
         <ThemeToggle />

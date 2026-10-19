@@ -2,7 +2,6 @@
 
 import base64
 import json
-import threading
 import urllib.error
 import urllib.request
 
@@ -11,19 +10,6 @@ import pytest
 from tests.conftest import wait_verified
 from traffic_poc.detection.bundle import import_bundle
 from traffic_poc.detection.export_bundle import export_bundle
-from traffic_poc.web.server import LocalServer
-
-
-@pytest.fixture
-def server(pipeline):
-    server = LocalServer(0)
-    server.pipeline = pipeline
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    yield server
-    server.shutdown()
-    server.server_close()
-    thread.join(timeout=5)
 
 
 def request(server, path, body=None, headers=None):

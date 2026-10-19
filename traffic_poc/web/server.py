@@ -4,17 +4,18 @@ import json
 import logging
 import re
 import tempfile
+import uuid
 import zipfile
 from datetime import date
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 from pydantic import ValidationError
 
 from traffic_poc.detection.bundle import MAX_BUNDLE_BYTES, import_bundle
-from traffic_poc.pipeline import Pipeline, PipelineBusy, Submission
+from traffic_poc.pipeline import Pipeline, PipelineBusy, Submission, VideoUpload
 from traffic_poc.records.report import build_report
 from traffic_poc.records.reviews import Review
 
@@ -33,6 +34,16 @@ CONTENT_TYPES = {
 RECORD_ROUTE = re.compile(
     r"/api/records/([a-f0-9]{32})(?:/(image|original|export|report|review|verify))?"
 )
+VIDEO_ROUTE = re.compile(r"/api/videos/([a-f0-9]{32})(/stream)?")
+VIDEO_SUFFIXES = {".mp4", ".m4v", ".mov", ".avi", ".mkv", ".webm"}
+VIDEO_TYPES = {
+    ".mp4": "video/mp4",
+    ".m4v": "video/mp4",
+    ".mov": "video/mp4",
+    ".webm": "video/webm",
+}
+MAX_VIDEO_BYTES = 2 * 1024**3
+RANGE = re.compile(r"bytes=(\d*)-(\d*)")
 FRAME_ROUTE = re.compile(r"/api/records/([a-f0-9]{32})/frames/([1-9][0-9]{0,8})")
 SEARCH_FILTERS = {
     "type",
@@ -171,6 +182,77 @@ class Handler(BaseHTTPRequestHandler):
                 pipeline.verify(record_id)
         return ids
 
+    def _video(self, query: str) -> str:
+        """Stream a video body to data/videos and queue Tier-1 detection."""
+        if self.headers.get("Transfer-Encoding"):
+            raise ValueError("Chunked requests are not supported")
+        params = {key: values[-1] for key, values in parse_qs(query).items()}
+        upload = VideoUpload(
+            filename=unquote(self.headers.get("X-Filename", "")),
+            camera_type=params.get("camera_type", "CCTV"),
+            allowed_direction=int(params.get("allowed_direction", "-1")),
+        )
+        suffix = Path(upload.filename).suffix.lower()
+        if suffix not in VIDEO_SUFFIXES:
+            raise ValueError("Upload an MP4, MOV, AVI, MKV or WebM video")
+        size = int(self.headers.get("Content-Length", "0"))
+        if size < 1 or size > MAX_VIDEO_BYTES:
+            raise ValueError("Video is empty or larger than 2 GB")
+        directory = self.server.pipeline.settings.data_dir / "videos"
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / f"{uuid.uuid4().hex}{suffix}"
+        remaining = size
+        with path.open("wb") as file:
+            while remaining:
+                chunk = self.rfile.read(min(remaining, 1024 * 1024))
+                if not chunk:
+                    break
+                file.write(chunk)
+                remaining -= len(chunk)
+        try:
+            if remaining:
+                raise ValueError("Incomplete request body")
+            return self.server.pipeline.submit_video(path, upload)
+        except Exception:
+            path.unlink()
+            raise
+
+    def _stream(self, file: Path, content_type: str) -> None:
+        """Send a file in 1 MB chunks, honouring one byte range for seeking."""
+        size = file.stat().st_size
+        start, end = 0, size - 1
+        match = RANGE.fullmatch(self.headers.get("Range", ""))
+        if match and (match.group(1) or match.group(2)):
+            if match.group(1):
+                start = int(match.group(1))
+                end = min(int(match.group(2) or end), end)
+            else:
+                start = max(0, size - int(match.group(2)))
+            if start > end:
+                self.send_response(416)
+                self.send_header("Content-Range", f"bytes */{size}")
+                self.end_headers()
+                return
+            self.send_response(206)
+            self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+        else:
+            self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(end - start + 1))
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        with file.open("rb") as source:
+            source.seek(start)
+            remaining = end - start + 1
+            while remaining:
+                chunk = source.read(min(remaining, 1024 * 1024))
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+                remaining -= len(chunk)
+
     def do_GET(self) -> None:
         if not self._trusted_request():
             self._json(HTTPStatus.FORBIDDEN, {"error": "Local same-origin access only"})
@@ -192,6 +274,17 @@ class Handler(BaseHTTPRequestHandler):
                 )
             elif path == "/api/records":
                 self._json(200, pipeline.repository.search(**search_options(url.query)))
+            elif path == "/api/videos":
+                self._json(200, pipeline.repository.list_videos())
+            elif match := VIDEO_ROUTE.fullmatch(path):
+                video = pipeline.repository.get_video(match.group(1))
+                if match.group(2):
+                    name = video["preview"] or video["file"]
+                    file = pipeline.settings.data_dir / "videos" / name
+                    kind = VIDEO_TYPES.get(file.suffix, "application/octet-stream")
+                    self._stream(file, kind)
+                else:
+                    self._json(200, video)
             elif match := FRAME_ROUTE.fullmatch(path):
                 record_id, frame_index = match.groups()
                 record = pipeline.repository.get(record_id)
@@ -273,6 +366,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(202, {"id": record_id})
             elif path == "/api/bundles":
                 self._json(201, {"record_ids": self._bundle()})
+            elif path == "/api/videos":
+                video_id = self._video(urlsplit(self.path).query)
+                self._json(202, pipeline.repository.get_video(video_id))
             elif (match := RECORD_ROUTE.fullmatch(path)) and match.group(2) == "review":
                 review = Review.model_validate(self._body())
                 pipeline.repository.review(match.group(1), review)

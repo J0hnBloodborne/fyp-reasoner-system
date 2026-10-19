@@ -1,0 +1,44 @@
+/* Docked workspace, as in an editing suite: search on top, the monitor and
+   inspector side by side, results along the bottom. Panels scroll on their
+   own so the monitor never leaves the screen on desktop. */
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 400px);
+  grid-template-rows: auto minmax(0, 1fr) minmax(150px, 28%);
+  grid-template-areas: "search search" "monitor inspector" "bin bin";
+  height: calc(100dvh - var(--bar-h) - var(--status-h));
+  min-height: 560px;
+}
+.workspace__search { grid-area: search; }
+.workspace__monitor { grid-area: monitor; display: flex; min-height: 0; min-width: 0; }
+.workspace__monitor > .monitor { flex: 1; }
+.workspace__inspector { grid-area: inspector; display: flex; min-height: 0; }
+.workspace__inspector > .inspector { flex: 1; }
+.workspace__bin { grid-area: bin; }
+
+.bin { display: flex; flex-direction: column; min-height: 0; border-top: 1px solid var(--line); background: var(--panel); }
+.bin__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; padding-right: 16px; border-bottom: 1px solid var(--line); }
+.bin__tabs { border-bottom: 0; }
+.bin__summary { font-size: var(--fs-sm); color: var(--muted); margin-right: auto; }
+.bin__limit { padding: 6px 16px; font-size: var(--fs-sm); border-bottom: 1px solid var(--line-soft); }
+.bin__body { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.bin__state { display: grid; gap: 10px; justify-items: start; max-width: 64ch; padding: 22px 16px; }
+.bin__state h2 { font-size: var(--fs-xl); font-weight: 800; }
+.bin__state .skeleton { width: min(520px, 100%); }
+.bin__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (max-width: 1100px) {
+  .workspace {
+    display: flex; flex-direction: column; height: auto; min-height: 0;
+  }
+  /* The search box is the main action, so it stays reachable while scrolling. */
+  .workspace__search { position: sticky; top: 0; z-index: 10; }
+  .workspace__inspector { border-top: 1px solid var(--line); }
+  .inspector { border-left: 0; }
+  .inspector__panel { overflow: visible; }
+  .bin__body { overflow: visible; }
+  .bin__summary { padding-left: 12px; }
+  .bin__bar .legend { padding: 0 12px 6px; }
+  /* With nothing open, results follow the search box directly. */
+  .workspace--browsing .workspace__monitor, .workspace--browsing .workspace__inspector { display: none; }
+}

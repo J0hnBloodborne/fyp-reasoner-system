@@ -4,9 +4,13 @@ import { KeysDialog } from "./components/KeysDialog";
 import { StatusBar } from "./components/StatusBar";
 import { isTyping } from "./hooks";
 import { useLocation } from "./router";
+import { Workspace } from "./workspace/Workspace";
+
+const INCIDENT = /^\/incident\/([a-f0-9]{32})$/;
 
 export function App() {
   const url = useLocation();
+  const path = url.pathname;
   const [keysOpen, setKeysOpen] = useState(false);
 
   useEffect(() => {
@@ -17,11 +21,16 @@ export function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const incident = path.match(INCIDENT);
+  const page = path === "/" || incident
+    ? <Workspace selectedId={incident?.[1] ?? null} params={url.searchParams} />
+    : <main id="main" />;
+
   return (
     <>
       <a className="skip-link" href="#main">Skip to content</a>
-      <Header path={url.pathname} />
-      <main id="main" />
+      <Header path={path} />
+      {page}
       <StatusBar onShowKeys={() => setKeysOpen(true)} />
       <KeysDialog open={keysOpen} onClose={() => setKeysOpen(false)} />
     </>

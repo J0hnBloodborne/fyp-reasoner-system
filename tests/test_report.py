@@ -69,6 +69,20 @@ def test_report_combines_all_stages(tmp_path, record_id):
     assert [item["frame_index"] for item in report["evidence"]] == [1, 2, 3, 4, 5]
     assert report["evidence"][2]["role"] == "trigger"
     assert report["evidence"][2]["url"] == f"/api/records/{record_id}/frames/3"
+    assert [item["exhibit"] for item in report["evidence"]] == [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+    ]
+    assert [entry["action"] for entry in report["custody_log"]] == [
+        "imported",
+        "verification_queued",
+        "verification_started",
+        "verification_completed",
+    ]
+    assert report["custody_log"][-1]["detail"] == "supported"
     assert report["current_decision"] is None
     assert report["notice_issued"] is False
 
@@ -80,6 +94,12 @@ def test_report_reflects_latest_review(tmp_path, record_id):
     report = build_report(repository.get(record_id))
     assert [review["reviewer"] for review in report["reviews"]] == ["a", "b"]
     assert report["current_decision"] == "rejected"
+    assert [
+        (entry["action"], entry["actor"]) for entry in report["custody_log"][-2:]
+    ] == [
+        ("approved", "a"),
+        ("rejected", "b"),
+    ]
 
 
 def test_report_without_fps_or_verification(tmp_path, record_id):
@@ -91,6 +111,7 @@ def test_report_without_fps_or_verification(tmp_path, record_id):
     assert report["incident"]["trigger_time_seconds"] is None
     assert report["tier2"]["status"] == "not_queued"
     assert report["tier2"]["verdict"] is None
+    assert [entry["action"] for entry in report["custody_log"]] == ["imported"]
 
 
 def test_uploads_have_no_incident_report(pipeline, image_base64):

@@ -2,12 +2,71 @@
 
 from traffic_poc.records.store import now
 
-REPORT_VERSION = "1.0"
+REPORT_VERSION = "1.1"
 
 
 def _seconds(frame_index: int, fps: float | None) -> float | None:
     """Frame 1 is the first decoded frame, at 0 s."""
     return None if fps is None else round((frame_index - 1) / fps, 3)
+
+
+def _custody_log(record: dict) -> list[dict]:
+    """Who or what handled the record, oldest first.
+
+    Covers the import, the latest verification attempt and every review.
+    A retried verification replaces the earlier attempt's timestamps.
+    """
+    event = record["tier1_event"]
+    verification = record.get("verification") or {}
+    model = (verification.get("provenance") or {}).get("model_id") or "Tier-2 pipeline"
+    status = verification.get("status")
+    result = verification.get("result") or {}
+    entries = [
+        {
+            "at": record["created_at"],
+            "action": "imported",
+            "actor": "Tier-1 bundle import",
+            "detail": f"Bundle {event['bundle_id']}, event {event['event_id']}",
+        }
+    ]
+    if queued := verification.get("queued_at"):
+        skipped = status == "skipped"
+        entries.append(
+            {
+                "at": queued,
+                "action": "verification_skipped" if skipped else "verification_queued",
+                "actor": "Tier-2 pipeline",
+                "detail": verification.get("error") if skipped else None,
+            }
+        )
+    if started := verification.get("started_at"):
+        entries.append(
+            {
+                "at": started,
+                "action": "verification_started",
+                "actor": model,
+                "detail": None,
+            }
+        )
+    if finished := verification.get("finished_at"):
+        entries.append(
+            {
+                "at": finished,
+                "action": f"verification_{status}",
+                "actor": model,
+                "detail": result.get("verdict") or verification.get("error"),
+            }
+        )
+    for review in record["reviews"]:
+        entries.append(
+            {
+                "at": review["created_at"],
+                "action": review["decision"],
+                "actor": review["reviewer"],
+                "detail": review["notes"] or None,
+            }
+        )
+    return sorted(entries, key=lambda entry: entry["at"])
 
 
 def build_report(record: dict) -> dict:
@@ -55,6 +114,7 @@ def build_report(record: dict) -> dict:
         },
         "evidence": [
             {
+                "exhibit": f"E{number}",
                 "frame_index": frame["frame_index"],
                 "role": frame["role"],
                 "time_seconds": _seconds(frame["frame_index"], fps),
@@ -64,9 +124,12 @@ def build_report(record: dict) -> dict:
                 "height": frame["height"],
                 "url": f"/api/records/{record['id']}/frames/{frame['frame_index']}",
             }
-            for frame in sorted(event["frames"], key=lambda item: item["frame_index"])
+            for number, frame in enumerate(
+                sorted(event["frames"], key=lambda item: item["frame_index"]), 1
+            )
         ],
         "reviews": reviews,
+        "custody_log": _custody_log(record),
         "current_decision": reviews[-1]["decision"] if reviews else None,
         "confidence_calibrated": False,
         "notice_issued": False,

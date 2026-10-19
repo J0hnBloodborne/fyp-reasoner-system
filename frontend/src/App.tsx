@@ -3,6 +3,10 @@ import { Header } from "./components/Header";
 import { KeysDialog } from "./components/KeysDialog";
 import { StatusBar } from "./components/StatusBar";
 import { isTyping } from "./hooks";
+import { AnalyzePage } from "./pages/AnalyzePage";
+import { ImportPage } from "./pages/ImportPage";
+import { NotFound } from "./pages/NotFound";
+import { PrivacyPage } from "./pages/PrivacyPage";
 import { useLocation } from "./router";
 import { Workspace } from "./workspace/Workspace";
 
@@ -22,9 +26,12 @@ export function App() {
   }, []);
 
   const incident = path.match(INCIDENT);
-  const page = path === "/" || incident
-    ? <Workspace selectedId={incident?.[1] ?? null} params={url.searchParams} />
-    : <main id="main" />;
+  let page;
+  if (path === "/" || incident) page = <Workspace selectedId={incident?.[1] ?? null} params={url.searchParams} />;
+  else if (path === "/import") page = <ImportPage />;
+  else if (path === "/analyze") page = <AnalyzePage />;
+  else if (path === "/privacy") page = <PrivacyPage />;
+  else page = <NotFound path={path} />;
 
   return (
     <>

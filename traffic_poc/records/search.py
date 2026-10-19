@@ -65,6 +65,7 @@ def summarize(record: dict, reviews: list[dict]) -> dict:
         "source": record.get("source"),
         "types": types,
         "bundle_id": event.get("bundle_id"),
+        "video_id": event.get("video_id"),
         "source_video": event.get("source_video"),
         "camera_type": event.get("camera_type"),
         "frame_count": event.get("frame_count"),

@@ -36,6 +36,6 @@ export function Link({ href, onClick, ...rest }: AnchorHTMLAttributes<HTMLAnchor
 /** Each view names itself in the browser tab. */
 export function useTitle(title: string) {
   useEffect(() => {
-    document.title = title ? `${title} · Traffic Search` : "Traffic Search";
+    document.title = title ? `${title} · TrafficSeek` : "TrafficSeek";
   }, [title]);
 }

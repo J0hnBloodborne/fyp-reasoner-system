@@ -21,7 +21,7 @@ export function Header({ path }: { path: string }) {
   const searchActive = path === "/" || path.startsWith("/incident/");
   return (
     <header className="topbar">
-      <Link href="/" className="topbar__brand">Traffic Search</Link>
+      <Link href="/" className="topbar__brand">TrafficSeek</Link>
       <nav className="topbar__nav" aria-label="Main">
         <Link href="/" aria-current={searchActive ? "page" : undefined}>Search</Link>
         <Link href="/import" aria-current={path === "/import" ? "page" : undefined}>Import</Link>

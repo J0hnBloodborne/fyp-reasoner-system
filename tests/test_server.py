@@ -24,7 +24,7 @@ def request(server, path, body=None, headers=None):
 
 def test_ui_and_health(server):
     with request(server, "/") as response:
-        assert b"<title>Traffic Search</title>" in response.read()
+        assert b"<title>TrafficSeek</title>" in response.read()
         assert response.headers["Content-Security-Policy"]
     with request(server, "/api/health") as response:
         assert json.load(response)["model_id"] == "Qwen/Qwen3-VL-2B-Instruct"

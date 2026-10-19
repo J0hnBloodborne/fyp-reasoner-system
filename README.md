@@ -58,7 +58,7 @@ marked failed on restart rather than silently reprocessed.
 
 ## Use
 
-Open `http://127.0.0.1:8000` after `serve`. The app has three screens.
+Open `http://127.0.0.1:8000` after `serve` to use TrafficSeek. The app has three screens.
 
 **Search** is the home screen. Describe an event in plain words, for example
 "car driving against traffic at night", and narrow the results with the

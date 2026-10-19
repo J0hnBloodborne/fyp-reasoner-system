@@ -6,7 +6,7 @@ export function PrivacyPage() {
   return (
     <main className="page page--prose" id="main">
       <h1>Privacy and terms</h1>
-      <p className="page__lead">Traffic Search is a research prototype for Senior Design Project 50. It runs on this computer and sends footage nowhere.</p>
+      <p className="page__lead">TrafficSeek is a research prototype for Senior Design Project 50. It runs on this computer and sends footage nowhere.</p>
 
       <h2>Where processing happens</h2>
       <p>The server listens on this computer only (127.0.0.1) and refuses requests from other sites. The Tier-1 detector and the vision model run locally. The only network use is the first download of model weights, and offline mode turns that off.</p>

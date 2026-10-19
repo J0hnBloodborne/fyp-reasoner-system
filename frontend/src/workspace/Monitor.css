@@ -1,0 +1,106 @@
+/* The monitor follows an editor's program monitor: picture on a dark
+   surround, timecode at bottom left, transport in the middle, position at
+   the right, and the evidence window as a filmstrip with in/out brackets. */
+.monitor { display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
+
+.monitor__head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  padding: 10px 16px 8px;
+}
+.monitor__title { flex: 1 1 260px; min-width: 0; }
+.monitor__title h1 { font-size: var(--fs-2xl); font-weight: 800; line-height: 1.05; letter-spacing: -0.005em; }
+.monitor__title p { margin-top: 3px; font-size: var(--fs-sm); color: var(--muted); }
+.monitor__events { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); }
+.monitor__events .mono { margin-right: 4px; }
+
+.monitor__screen {
+  position: relative; flex: 1 1 auto; min-height: 180px;
+  display: grid; place-items: center;
+  margin: 0 16px; background: var(--monitor); color: var(--monitor-ink);
+  overflow: hidden;
+}
+.monitor__screen:not(.monitor__screen--empty) { container-type: size; }
+.monitor__picture {
+  position: relative; aspect-ratio: var(--ratio);
+  width: min(100cqw, 100cqh * var(--ratio));
+}
+.monitor__picture img { width: 100%; height: 100%; object-fit: contain; }
+.monitor__screen--empty { padding: 24px; }
+.monitor__slate { display: grid; gap: 8px; max-width: 42ch; text-align: center; }
+.monitor__slate .eyebrow { color: color-mix(in srgb, var(--monitor-ink) 70%, transparent); }
+.monitor__screen .error-text { color: var(--monitor-ink); }
+.monitor__skeleton { width: min(60%, 360px); }
+.monitor__skeleton i { background: var(--monitor-line); }
+
+/* Exit tab: the small plate on top of a guide sign that carries the exit number. */
+.exit-tab {
+  position: absolute; top: 0; left: 0; padding: 5px 9px 4px;
+  background: var(--green); color: var(--green-ink);
+  box-shadow: inset 0 0 0 2px var(--green), inset 0 0 0 3.5px var(--green-ink);
+  font: 700 var(--fs-xs) / 1 var(--mono); letter-spacing: 0.05em;
+}
+.monitor__notice {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 6px 10px;
+  background: var(--amber); color: var(--amber-ink); font-size: var(--fs-sm); font-weight: 700;
+}
+
+.monitor__bar {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px;
+  padding: 6px 16px;
+}
+.timecode { font: 600 1.35rem / 1 var(--mono); color: var(--blue); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.monitor__transport { display: flex; gap: 2px; }
+.transport {
+  display: grid; place-items: center; width: 34px; height: 30px; padding: 0;
+  border: 0; background: transparent; color: var(--fg); cursor: pointer;
+}
+.transport:hover { background: var(--sunk); }
+.transport[aria-pressed="true"] { background: var(--blue); color: var(--blue-ink); }
+.transport:disabled { color: var(--line); cursor: not-allowed; background: transparent; }
+.monitor__where { justify-self: end; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 12px; font-size: var(--fs-xs); color: var(--muted); text-align: right; }
+.monitor__save { color: var(--fg); font-family: var(--font); font-weight: 600; font-size: var(--fs-sm); }
+
+/* Filmstrip with in/out brackets around the window the model saw. */
+.filmstrip { padding: 2px 16px 12px; }
+.filmstrip__head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-bottom: 6px; font-size: var(--fs-sm); }
+.filmstrip__head .mono { font-size: var(--fs-xs); color: var(--muted); }
+.filmstrip__key { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--muted); }
+.filmstrip__frames {
+  position: relative; display: grid; gap: 6px; list-style: none;
+  width: fit-content; max-width: 100%; padding: 6px 14px; margin: 0 auto;
+}
+.filmstrip__frames::before, .filmstrip__frames::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 8px;
+  border: 3px solid var(--blue);
+}
+.filmstrip__frames::before { left: 0; border-right: 0; }
+.filmstrip__frames::after { right: 0; border-left: 0; }
+.filmstrip__frames button {
+  display: grid; gap: 4px; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
+}
+.filmstrip__frames img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--monitor); border: 1px solid var(--line); }
+.filmstrip__frames button:hover img { outline: 2px solid var(--fg); }
+.filmstrip__frames button[aria-pressed="true"] img { outline: 3px solid var(--blue); outline-offset: 2px; }
+.filmstrip__cap { display: flex; align-items: center; gap: 6px; font-size: var(--fs-xs); }
+.filmstrip__trigger { font-weight: 700; }
+
+/* Keyframe diamond: a frame the model cited in an observation. */
+.kf { display: inline-block; flex: none; width: 8px; height: 8px; background: var(--fg); transform: rotate(45deg); }
+
+@media (max-width: 1100px) {
+  .monitor__screen { flex: none; aspect-ratio: 16 / 9; min-height: 0; }
+}
+@media (max-height: 820px) and (min-width: 1101px) {
+  .filmstrip__head { display: none; }
+}
+@media (max-width: 640px) {
+  .monitor__bar { grid-template-columns: 1fr auto; }
+  .monitor__where { grid-column: 1 / -1; justify-self: start; justify-content: flex-start; text-align: left; }
+  .monitor__screen { margin: 0; }
+  .filmstrip__frames { gap: 3px; padding: 6px 11px; }
+  .filmstrip__frames button[aria-pressed="true"] img { outline-offset: 0; }
+  .filmstrip__cap > :last-child:not(.filmstrip__trigger) { display: none; }
+  .filmstrip__trigger { font-size: 0; }
+  .filmstrip__trigger::after { content: "T"; font-size: var(--fs-xs); }
+  .monitor__title h1 { font-size: var(--fs-xl); }
+}

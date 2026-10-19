@@ -2,7 +2,6 @@
 
 import base64
 import json
-import threading
 import urllib.error
 import urllib.request
 
@@ -11,19 +10,6 @@ import pytest
 from tests.conftest import wait_verified
 from traffic_poc.detection.bundle import import_bundle
 from traffic_poc.detection.export_bundle import export_bundle
-from traffic_poc.web.server import LocalServer
-
-
-@pytest.fixture
-def server(pipeline):
-    server = LocalServer(0)
-    server.pipeline = pipeline
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    yield server
-    server.shutdown()
-    server.server_close()
-    thread.join(timeout=5)
 
 
 def request(server, path, body=None, headers=None):
@@ -38,10 +24,43 @@ def request(server, path, body=None, headers=None):
 
 def test_ui_and_health(server):
     with request(server, "/") as response:
-        assert b"Traffic evidence review" in response.read()
+        assert b"<title>TrafficSeek</title>" in response.read()
         assert response.headers["Content-Security-Policy"]
     with request(server, "/api/health") as response:
         assert json.load(response)["model_id"] == "Qwen/Qwen3-VL-2B-Instruct"
+
+
+@pytest.mark.parametrize(
+    "path", ["/import", "/analyze", "/privacy", "/incident/" + "a" * 32]
+)
+def test_app_routes_serve_the_shell(server, path):
+    with request(server, path) as response:
+        assert response.headers["Content-Type"].startswith("text/html")
+        assert b'<div id="root">' in response.read()
+
+
+def test_built_assets(server):
+    with request(server, "/assets/app.js") as response:
+        assert response.headers["Content-Type"].startswith("text/javascript")
+    with request(server, "/favicon.svg") as response:
+        assert response.headers["Content-Type"] == "image/svg+xml"
+
+
+@pytest.mark.parametrize(
+    "path", ["/no-such-page", "/assets/../server.py", "/index.html", "/incident/1"]
+)
+def test_unknown_pages_get_the_app_not_found(server, path):
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        request(server, path)
+    assert exc.value.code == 404
+    assert exc.value.headers["Content-Type"].startswith("text/html")
+
+
+def test_unknown_api_route_is_json(server):
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        request(server, "/api/nothing")
+    assert exc.value.code == 404
+    assert json.load(exc.value) == {"error": "Not found"}
 
 
 def test_http_lifecycle(server, image_base64):

@@ -1,0 +1,15 @@
+.topbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 26px;
+  min-height: var(--bar-h); padding: 6px 16px;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.topbar a { text-decoration: none; }
+.topbar__brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1.05rem; letter-spacing: -0.005em; }
+/* A program tally: the one red light in the chrome. */
+.topbar__brand::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--red); }
+.topbar__nav { display: flex; gap: 18px; font-weight: 500; font-size: var(--fs-md); }
+.topbar__nav a { padding: 4px 0 3px; border-bottom: 2px solid transparent; color: var(--muted); }
+.topbar__nav a:hover { color: var(--fg); }
+.topbar__nav a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--fg); }
+.topbar__end { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.topbar__secondary[aria-current="page"] { border-color: var(--fg); }

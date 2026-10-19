@@ -1,0 +1,62 @@
+/* Edit Bay palette: light grey editing-suite chrome around a dark viewer.
+   Verdicts are tally lights: preview green for supported, program red for
+   not supported, hold amber for insufficient evidence. Timecode is burned in
+   cream on black, as on a broadcast monitor. The viewer stays dark in both
+   themes so footage is judged against the same surround. */
+:root {
+  --bg: #d8dadf;
+  --panel: #e7e8ec;
+  --surface: #f1f2f4;
+  --sunk: #cbced4;
+  --fg: #16181c;
+  --muted: #555a63;
+  --line: #a3a7af;
+  --line-soft: #c3c6cc;
+
+  --viewer: #23262b;
+  --viewer-ink: #c9ccd2;
+  --viewer-line: #3a3e45;
+  --tc: #f3ead0;
+  --burn: #0b0c0e;
+
+  --green: #2f7d4f;
+  --red: #c4302b;
+  --amber: #b07d0a;
+  --ink-on-color: #ffffff;
+  --wash: rgb(22 24 28 / 0.08);
+
+  --font: "Red Hat Text", "Segoe UI", system-ui, sans-serif;
+  --mono: "Red Hat Mono", Consolas, "Courier New", monospace;
+
+  --fs-xs: 0.6875rem;
+  --fs-sm: 0.78rem;
+  --fs-md: 0.875rem;
+  --fs-lg: 1rem;
+  --fs-xl: 1.3rem;
+  --fs-2xl: 1.65rem;
+
+  --bar-h: 44px;
+  --status-h: 30px;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #1a1c20;
+  --panel: #22252a;
+  --surface: #2a2d33;
+  --sunk: #141619;
+  --fg: #e3e5e9;
+  --muted: #99a0aa;
+  --line: #41454c;
+  --line-soft: #31343a;
+
+  --viewer: #0e1013;
+  --viewer-line: #2a2d33;
+
+  --green: #48a46c;
+  --red: #e0483f;
+  --amber: #d9a72b;
+  --ink-on-color: #0e1013;
+  --wash: rgb(227 229 233 / 0.08);
+  color-scheme: dark;
+}

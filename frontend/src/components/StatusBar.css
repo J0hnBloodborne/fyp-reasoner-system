@@ -1,0 +1,20 @@
+.statusbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px;
+  min-height: var(--status-h); padding: 4px 16px;
+  border-top: 1px solid var(--line); background: var(--panel);
+  font: 400 var(--fs-xs) / 1.3 var(--mono); color: var(--muted);
+}
+.statusbar__item { display: inline-flex; align-items: center; gap: 7px; }
+.statusbar__model::before { content: ""; width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--muted); }
+.statusbar__model--ready::before { background: var(--green); box-shadow: none; }
+.statusbar__model--loading::before, .statusbar__model--load_failed::before { background: var(--amber); box-shadow: none; }
+.statusbar__item--warn { color: var(--red); }
+.statusbar__hint { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; }
+.statusbar__hint kbd { margin-left: 2px; }
+.statusbar__hint .link-button { margin-left: 8px; color: var(--muted); }
+.statusbar__link { color: var(--muted); }
+
+@media (max-width: 900px) {
+  .statusbar__hint { display: none; }
+  .statusbar__link { margin-left: auto; }
+}

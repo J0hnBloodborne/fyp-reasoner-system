@@ -10,6 +10,8 @@ from pathlib import Path
 from traffic_poc.records.reviews import Review
 from traffic_poc.records.search import match_query, search_text, summarize
 
+VIDEO_ACTIVE = {"queued", "preview", "extracting", "detecting", "importing"}
+
 
 def now() -> str:
     """Use UTC for application timestamps; capture time remains supplied metadata."""
@@ -32,6 +34,11 @@ class Repository:
                 CREATE TABLE IF NOT EXISTS reviews (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     record_id TEXT NOT NULL REFERENCES records(id),
+                    created_at TEXT NOT NULL,
+                    payload TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS videos (
+                    id TEXT PRIMARY KEY,
                     created_at TEXT NOT NULL,
                     payload TEXT NOT NULL
                 );
@@ -192,6 +199,45 @@ class Repository:
             )
             self._index(db, record_id)
 
+    def create_video(self, payload: dict) -> None:
+        with self.connect() as db:
+            db.execute(
+                "INSERT INTO videos VALUES (?, ?, ?)",
+                (payload["id"], payload["created_at"], json.dumps(payload)),
+            )
+
+    def update_video(self, video_id: str, **changes) -> None:
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT payload FROM videos WHERE id=?", (video_id,)
+            ).fetchone()
+            if row is None:
+                raise KeyError(video_id)
+            payload = {**json.loads(row["payload"]), **changes}
+            db.execute(
+                "UPDATE videos SET payload=? WHERE id=?",
+                (json.dumps(payload), video_id),
+            )
+
+    def get_video(self, video_id: str) -> dict:
+        with self.connect() as db:
+            row = db.execute(
+                "SELECT payload FROM videos WHERE id=?", (video_id,)
+            ).fetchone()
+            if row is None:
+                raise KeyError(video_id)
+            return json.loads(row["payload"])
+
+    def list_videos(self) -> list[dict]:
+        with self.connect() as db:
+            return [
+                json.loads(row["payload"])
+                for row in db.execute(
+                    "SELECT payload FROM videos ORDER BY created_at DESC"
+                )
+            ]
+
     def unverified_tier1(self) -> list[str]:
         """Tier-1 events never verified, or interrupted while queued or running."""
         with self.connect() as db:
@@ -222,6 +268,18 @@ class Repository:
                     "UPDATE records SET status='failed', payload=? WHERE id=?",
                     (json.dumps(payload), row["id"]),
                 )
+            for row in db.execute("SELECT id, payload FROM videos").fetchall():
+                payload = json.loads(row["payload"])
+                if payload["status"] in VIDEO_ACTIVE:
+                    payload.update(
+                        status="failed",
+                        finished_at=now(),
+                        error="Application stopped before this video was processed",
+                    )
+                    db.execute(
+                        "UPDATE videos SET payload=? WHERE id=?",
+                        (json.dumps(payload), row["id"]),
+                    )
 
 
 def _matches(summary: dict, key: str, value: str) -> bool:

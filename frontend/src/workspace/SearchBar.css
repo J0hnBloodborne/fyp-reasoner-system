@@ -1,0 +1,48 @@
+.search { display: grid; gap: 8px; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.search__row { display: flex; gap: 8px; }
+.search__row input {
+  flex: 1 1 auto; min-width: 0; padding: 8px 12px;
+  border: 1px solid var(--fg); background: var(--surface); color: var(--fg);
+  font-size: var(--fs-lg);
+}
+.search__row input::placeholder { color: var(--muted); }
+.search__go { min-width: 104px; font-size: var(--fs-lg); }
+
+.search__filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 0 0 9px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  font-size: var(--fs-sm); cursor: pointer;
+}
+.chip__label { font: 600 var(--fs-xs) var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.chip select {
+  max-width: 13em; padding: 4px 22px 4px 2px; border: 0; background: transparent; color: inherit;
+  font-weight: 500; font-size: var(--fs-sm); cursor: pointer;
+}
+.chip--on { border-color: var(--fg); background: var(--fg); color: var(--bg); }
+.chip--on .chip__label { color: color-mix(in srgb, var(--bg) 70%, transparent); }
+.chip--on select option { color: var(--fg); background: var(--surface); }
+.chip:focus-within { outline: 2px solid var(--fg); outline-offset: 2px; }
+.chip select:focus-visible { outline: none; }
+
+.search__more { position: relative; }
+.search__more > summary { padding: 0 10px; list-style: none; }
+.search__more > summary::-webkit-details-marker { display: none; }
+.search__more > summary::after { content: "+"; font-family: var(--mono); }
+.search__more[open] > summary::after { content: "−"; }
+.search__more-body {
+  position: absolute; z-index: 20; top: calc(100% + 6px); left: 0;
+  display: grid; gap: 10px; width: 260px; padding: 12px;
+  border: 1px solid var(--fg); background: var(--panel);
+}
+.search__clear { margin-left: 4px; font-size: var(--fs-sm); color: var(--muted); }
+.search__toggle { display: none; justify-self: start; font-size: var(--fs-sm); }
+
+@media (max-width: 640px) {
+  .search__toggle { display: block; }
+  .search__filters { display: none; }
+  .search__filters--open { display: flex; }
+  .search__row input { font-size: var(--fs-md); }
+  .search__go { min-width: 0; }
+  .search__more-body { position: static; width: auto; margin-top: 6px; }
+}

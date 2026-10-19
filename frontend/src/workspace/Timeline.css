@@ -1,0 +1,68 @@
+/* Each recording is a track: a clip ruler with timecode ticks and a tally-
+   coloured block at every event. The open event carries the red playhead
+   with a burned-in timecode flag. */
+.timeline { display: grid; align-content: start; }
+
+.track {
+  display: grid; grid-template-columns: minmax(0, 230px) minmax(0, 1fr); align-items: center;
+  border-bottom: 1px solid var(--line-soft);
+}
+.track--active { background: var(--wash); }
+.track__head {
+  display: grid; gap: 1px; align-self: stretch; align-content: center;
+  padding: 8px 14px; border-right: 1px solid var(--line-soft); min-width: 0;
+}
+.track__head b { font-weight: 700; font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track__head .mono { font-size: var(--fs-xs); color: var(--muted); }
+.track__tally { font-size: var(--fs-xs); color: var(--muted); }
+.track__video { font: 600 10px/1 var(--mono); letter-spacing: 0.06em; color: var(--fg); }
+
+.track__lane { position: relative; height: 54px; margin: 0 22px; }
+.track__road { position: absolute; left: 0; right: 0; top: 14px; height: 24px; background: var(--sunk); border: 1px solid var(--line); }
+.track__post {
+  position: absolute; top: 41px; transform: translateX(-50%);
+  font: 400 var(--fs-xs) / 1 var(--mono); color: var(--muted);
+}
+.track__post::before { content: ""; position: absolute; left: 50%; top: -9px; width: 1px; height: 7px; background: var(--line); }
+
+/* Event blocks */
+.mk {
+  position: absolute; top: 17px; width: 8px; height: 18px; margin-left: -4px; padding: 0;
+  border: 0; background: transparent; cursor: pointer;
+}
+.mk::before { content: ""; position: absolute; inset: -5px -5px; }
+.mk--supported { background: var(--green); }
+.mk--not_supported { background: var(--red); }
+.mk--insufficient_evidence { box-shadow: inset 0 0 0 2px var(--amber); background: var(--surface); }
+.mk--failed { background: var(--amber); }
+.mk--pending, .mk--skipped, .mk--unverified { box-shadow: inset 0 0 0 1.5px var(--muted); background: var(--surface); }
+.mk:hover { z-index: 3; outline: 1px solid var(--fg); outline-offset: 2px; }
+.mk[aria-pressed="true"] { z-index: 4; outline: 2px solid var(--fg); outline-offset: 2px; }
+.mk:focus-visible { z-index: 5; }
+
+.playhead { position: absolute; top: 4px; bottom: 6px; width: 2px; margin-left: -1px; background: var(--red); z-index: 2; pointer-events: none; }
+.playhead__flag {
+  position: absolute; top: -4px; left: 5px; padding: 2px 5px;
+  background: var(--burn); color: var(--tc);
+  font: 600 10px / 1.1 var(--mono); white-space: nowrap;
+}
+
+.track--stills .stills { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 22px; }
+.still {
+  display: grid; gap: 3px; width: 80px; padding: 0; border: 0; background: none; cursor: pointer;
+  text-align: left; font-size: var(--fs-xs); color: var(--muted);
+}
+.still img { width: 80px; height: 45px; object-fit: cover; background: var(--viewer); border: 1px solid var(--line); }
+.still:hover img { outline: 1px solid var(--fg); }
+.still[aria-pressed="true"] img { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+.legend { display: inline-flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--fs-xs); color: var(--muted); }
+.legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.legend .mk { position: relative; top: 0; margin: 0; width: 7px; height: 13px; cursor: default; }
+.legend .mk::before { display: none; }
+
+@media (max-width: 700px) {
+  .track { grid-template-columns: minmax(0, 1fr); }
+  .track__head { border-right: 0; padding-bottom: 0; }
+  .track__lane { margin: 0 16px; }
+}

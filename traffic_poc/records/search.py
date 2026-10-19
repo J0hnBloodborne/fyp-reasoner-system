@@ -44,7 +44,11 @@ def search_text(record: dict, reviews: list[dict]) -> str:
 
 
 def summarize(record: dict, reviews: list[dict]) -> dict:
-    """List row fields shared by both record kinds."""
+    """List row fields shared by both record kinds.
+
+    Tier-1 rows carry their bundle, frame count and fps so a client can place
+    each event along its recording without fetching every record.
+    """
     event = record.get("tier1_event") or {}
     analysis = record.get("analysis") or {}
     verification = record.get("verification") or {}
@@ -60,9 +64,14 @@ def summarize(record: dict, reviews: list[dict]) -> dict:
         "status": record["status"],
         "source": record.get("source"),
         "types": types,
+        "bundle_id": event.get("bundle_id"),
+        "video_id": event.get("video_id"),
         "source_video": event.get("source_video"),
         "camera_type": event.get("camera_type"),
+        "frame_count": event.get("frame_count"),
+        "fps": event.get("fps"),
         "trigger_frame": event.get("trigger_frame"),
+        "target_id": event.get("target_id"),
         "outcome": analysis.get("outcome"),
         "verification_status": verification.get("status"),
         "verdict": (verification.get("result") or {}).get("verdict"),

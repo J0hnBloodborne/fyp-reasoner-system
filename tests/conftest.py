@@ -3,6 +3,7 @@
 import base64
 import io
 import json
+import threading
 import time
 
 import pytest
@@ -12,6 +13,7 @@ from traffic_poc.config import Settings
 from traffic_poc.pipeline import Pipeline
 from traffic_poc.records.store import Repository
 from traffic_poc.vlm.model import ModelResponse
+from traffic_poc.web.server import LocalServer
 
 
 @pytest.fixture
@@ -69,6 +71,18 @@ def pipeline(tmp_path, candidate):
     )
     yield result
     result.close()
+
+
+@pytest.fixture
+def server(pipeline):
+    server = LocalServer(0)
+    server.pipeline = pipeline
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    yield server
+    server.shutdown()
+    server.server_close()
+    thread.join(timeout=5)
 
 
 def wait_verified(pipeline, record_id, timeout=10):

@@ -58,13 +58,46 @@ marked failed on restart rather than silently reprocessed.
 
 ## Use
 
-1. Upload one JPEG, PNG, or WebP still image (at most 12 MiB / 24 MP).
-2. Optionally attach a location and capture timestamp. These are supplied metadata,
-   not facts inferred or verified by the model.
-3. Wait for a candidate, no-visible-violation, or uncertain record.
-4. Enter a reviewer name and confirm or reject. Optionally edit the analysis JSON;
-   corrections are validated and appended without replacing the original output.
-5. Export the complete record, including provenance and review history.
+Open `http://127.0.0.1:8000` after `serve` to use TrafficSeek. The app has three screens.
+
+**Search** is the home screen. Describe an event in plain words, for example
+"car driving against traffic at night", and narrow the results with the
+filters. Results show in two views:
+
+- **Timeline**: one clip ruler per recording, with a block at each event. The
+  block's tally colour gives the Tier-2 verdict: green for supported, red for
+  not supported, an amber outline for insufficient evidence, and a grey outline
+  for not verified yet.
+- **Register**: a sortable table with the matching text from each record. It
+  downloads as CSV.
+
+Select an event to open it in the monitor. For videos uploaded to the app,
+the monitor plays the footage, paused on the trigger, with burned-in timecode
+and a clip ruler that marks the in and out points of the window Tier-2 saw.
+Switch to "Frames Tier-2 saw" to step through the exact evidence frames. The
+arrow keys step one frame, Home and End jump to the in and out points, and
+Space plays or pauses. The inspector shows the
+verdict and the frame-by-frame observations, the Tier-1 detector data, the raw
+model output and the custody log. Record a named decision on the Review tab.
+Each event has its own link, `/incident/<record id>`. Press `?` for all keys.
+
+**Add footage** takes a video (MP4, MOV, AVI, MKV or WebM, up to 2 GB). The
+GPU worker makes a 720p preview copy (when `ffmpeg` is on PATH), runs the
+Tier-1 detector on every frame, imports the events in bundles of at most 100,
+and queues each for Tier-2. One video is processed at a time; a 35-second,
+60 fps clip takes about two minutes on an RTX 3070. The same screen still
+imports Tier-1 bundles made elsewhere (see below). Uploaded videos stay in
+`data/videos/`.
+
+**Analyze an image** checks one JPEG, PNG or WebP still (at most 12 MiB /
+24 MP) for riders without helmets and triple riding. Location and capture time
+are supplied metadata, not facts inferred or verified by the model. A reviewer
+can save a corrected analysis; it is validated and appended without replacing
+the original output.
+
+Downloads: the incident report for Tier-1 events (JSON, report version 1.1,
+with a custody log and exhibit labels E1, E2, ... for the evidence frames), the
+complete record with provenance and review history, and the original evidence.
 
 The original upload bytes and their SHA-256 are retained. Review uses a full-size,
 EXIF-oriented RGB image; inference uses a separate image capped at a 768 px long
@@ -99,7 +132,8 @@ traffic_poc/
   detection/    Tier-1: YOLO heuristics, video loop, bundle format
   vlm/          Tier-2: model adapter, prompts, output contracts
   records/      SQLite store, evidence files, reviews, search, reports
-  web/          local HTTP server and browser UI
+  web/          local HTTP server; static/ holds the built browser app
+frontend/       browser app source (React, TypeScript, Vite)
 scripts/        PowerShell setup and verify-and-run helpers
 ```
 
@@ -166,6 +200,36 @@ architecture. Future detector triggers can call the same pipeline after extendin
 the evidence input contract to carry frame sequences and detector grounding. A
 different reasoner can implement the same protocol without changing review/storage.
 
+## Frontend
+
+The browser app is React and TypeScript in `frontend/`, built with Vite into
+`traffic_poc/web/static/`. The build is committed, so `serve` needs no Node
+toolchain. After a change under `frontend/src`, rebuild and commit the output:
+
+```powershell
+cd frontend
+npm ci
+npm run build    # typecheck, then write traffic_poc/web/static
+```
+
+For live reload, start the Python server on port 8000, then run `npm run dev`
+in `frontend/`. Vite forwards `/api` to the Python server.
+
+```text
+frontend/src/
+  api.ts         typed calls; shapes mirror records/store.py, search.py, report.py
+  format.ts      timecode, labels, verdict marks
+  router.tsx     history routing for /, /incident/<id>, /import, /analyze, /privacy
+  components/    header, status bar, verdict sign, shortcut list
+  workspace/     search screen: search bar, monitor, inspector, timeline, register
+  pages/         import, analyze, privacy and terms, not found
+  styles/        colour tokens (light default, dark) and shared controls
+```
+
+The server sends the app shell for each app route and for unknown paths, with
+a 404 status for the latter, so the app shows its own not-found page. It
+serves built files only by flat file name and known extension.
+
 ## Fine-tuning and custom kernels
 
 Unsloth is reserved for the training environment, not imported by the application.
@@ -192,7 +256,7 @@ optimization and model architecture changes are separate from this application.
 .\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\ruff.exe check .
 .\.venv\Scripts\ruff.exe format --check .
-node --check traffic_poc/web/static/app.js
+cd frontend; npm ci; npm run build; cd ..
 .\.venv\Scripts\python.exe -m traffic_poc smoke path\to\image.jpg --runs 2
 ```
 

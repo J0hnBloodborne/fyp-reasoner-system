@@ -3,70 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Traffic evidence review</title>
-  <link rel="stylesheet" href="/style.css">
-  <script src="/app.js" defer></script>
+  <title>TrafficSeek</title>
+  <meta name="description" content="Search recorded traffic footage, check how the vision model judged each detector event, and record review decisions. Runs on this computer only.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="/theme-init.js"></script>
+  <script type="module" crossorigin src="/assets/app.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index.css">
 </head>
 <body>
-  <main>
-    <h1>Traffic evidence review</h1>
-    <p>Local VLM and Tier-1 candidate review · human confirmation only</p>
-    <p id="health" class="muted">Checking model…</p>
-    <form id="upload">
-      <label>Image <input id="image" type="file" accept="image/jpeg,image/png,image/webp" required></label>
-      <label>Location (optional) <input id="location" maxlength="200"></label>
-      <label>Capture time (optional, include timezone) <input id="captured" placeholder="2026-09-19T10:00:00+05:00" maxlength="100"></label>
-      <button id="analyze" type="submit">Analyze image</button>
-    </form>
-    <form id="bundle">
-      <label>Tier-1 bundle (ZIP) <input id="bundlefile" type="file" accept=".zip,application/zip" required></label>
-      <button id="import" type="submit">Import and verify</button>
-    </form>
-    <p id="message" role="status" aria-live="polite"></p>
-    <section id="record" hidden>
-      <h2>Evidence and findings</h2>
-      <p id="status"></p>
-      <div class="comparison">
-        <figure><img id="evidence" alt="Uploaded traffic evidence"><figcaption id="dimensions"></figcaption></figure>
-        <div><pre id="analysis"></pre><button id="retry" type="button" hidden>Retry verification</button><p id="timing" class="muted"></p></div>
-      </div>
-      <section id="tier1" hidden>
-        <h2>Tier-1 trigger</h2>
-        <pre id="tier1meta"></pre>
-        <div id="tier1frames" class="frames"></div>
-      </section>
-      <p id="caveat" class="muted">Confidence is model-reported and uncalibrated. A still image cannot establish direction or signal-crossing history.</p>
-      <form id="review" hidden>
-        <h2>Human review</h2>
-        <label>Reviewer <input id="reviewer" maxlength="100" required></label>
-        <label>Notes <textarea id="notes" maxlength="2000" rows="2"></textarea></label>
-        <label id="correct-label"><input id="correct" type="checkbox"> Save a corrected analysis</label>
-        <textarea id="correction" rows="12" aria-label="Corrected analysis JSON" hidden></textarea>
-        <button id="approve" name="decision" value="approved" type="submit">Confirm record</button>
-        <button id="reject" name="decision" value="rejected" type="submit">Reject record</button>
-      </form>
-      <p><a id="report">Download incident report</a><span id="report-sep"> · </span><a id="export">Download JSON</a> · <a id="original">Download original evidence</a></p>
-      <details><summary>Review history</summary><pre id="reviews"></pre></details>
-      <details><summary>Raw model output and provenance</summary><pre id="raw"></pre><pre id="provenance"></pre></details>
-    </section>
-    <section>
-      <h2>Search records</h2>
-      <form id="search">
-        <label>Describe the event <input id="q" type="search" maxlength="300" placeholder="a car travelling against traffic"></label>
-        <label>Source <select id="f-source"><option value="">Any</option><option value="tier1_bundle">Tier-1 event</option><option value="manual_upload">Uploaded image</option></select></label>
-        <label>Type <input id="f-type" maxlength="100" placeholder="Wrong-Way Driving"></label>
-        <label>Camera <select id="f-camera_type"><option value="">Any</option><option>CCTV</option><option>DASHCAM</option></select></label>
-        <label>Source video <input id="f-source_video" maxlength="200"></label>
-        <label>Tier-2 verdict <select id="f-verdict"><option value="">Any</option><option>supported</option><option>not_supported</option><option>insufficient_evidence</option></select></label>
-        <label>Decision <select id="f-decision"><option value="">Any</option><option>approved</option><option>rejected</option><option>unreviewed</option></select></label>
-        <label>Imported from <input id="f-imported_from" type="date"></label>
-        <label>Imported to <input id="f-imported_to" type="date"></label>
-        <button type="submit">Search</button>
-        <button id="clear" type="reset">Clear</button>
-      </form>
-      <p id="count" class="muted"></p>
-      <ul id="recent"></ul>
-    </section>
-  </main>
+  <div id="root"></div>
+  <noscript>TrafficSeek needs JavaScript. Turn it on for this page, then reload.</noscript>
 </body>
 </html>

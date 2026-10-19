@@ -18,6 +18,7 @@ from traffic_poc.records.store import Repository, now
 MAX_MANIFEST_BYTES = 1024 * 1024
 MAX_BUNDLE_BYTES = 256 * 1024 * 1024
 MAX_BUNDLE_FILES = 901
+MAX_EVENTS = 100
 MEDIA_TYPES = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
@@ -70,7 +71,7 @@ class Tier1Manifest(Contract):
     frame_count: int = Field(ge=1)
     fps: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     evidence_origin: Literal["raw_frame", "annotated_preview"] = "raw_frame"
-    events: list[Tier1Event] = Field(min_length=1, max_length=100)
+    events: list[Tier1Event] = Field(min_length=1, max_length=MAX_EVENTS)
 
     @model_validator(mode="after")
     def unique_events(self) -> Self:
@@ -132,8 +133,17 @@ def _read_bundle(path: Path, settings: Settings) -> tuple[Tier1Manifest, bytes, 
     return manifest, manifest_bytes, images
 
 
-def import_bundle(path: Path, settings: Settings, repository: Repository) -> list[str]:
-    """Import unverified Tier-1 candidates without running or claiming VLM analysis."""
+def import_bundle(
+    path: Path,
+    settings: Settings,
+    repository: Repository,
+    video_id: str | None = None,
+) -> list[str]:
+    """Import unverified Tier-1 candidates without running or claiming VLM analysis.
+
+    Events from a video uploaded to the app carry its video_id so the browser
+    can play the footage around them.
+    """
     manifest, manifest_bytes, images = _read_bundle(path, settings)
     manifest_hash = hashlib.sha256(manifest_bytes).hexdigest()
     ids = []
@@ -215,6 +225,7 @@ def import_bundle(path: Path, settings: Settings, repository: Repository) -> lis
                     "heuristic_value": event.heuristic_value,
                     "heuristic_value_kind": "Tier-1 raw confidence column; not a probability",
                     "frames": saved_frames,
+                    "video_id": video_id,
                 },
                 "analysis": None,
                 "raw_response": None,

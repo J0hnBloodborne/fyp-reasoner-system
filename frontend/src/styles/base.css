@@ -1,0 +1,114 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 var(--fs-md) / 1.45 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4, p, ul, ol, dl, dd, figure { margin: 0; }
+ul, ol { padding: 0; }
+img, video { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: inherit; }
+code, pre, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+.skip-link { position: absolute; left: 8px; top: -60px; z-index: 50; padding: 8px 12px; background: var(--fg); color: var(--bg); font-weight: 700; }
+.skip-link:focus { top: 8px; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.muted { color: var(--muted); }
+/* Small mono caps, as on console labels. */
+.eyebrow {
+  font: 600 var(--fs-xs) / 1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 32px; padding: 6px 12px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  font-weight: 500; font-size: var(--fs-md); line-height: 1;
+  text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { border-color: var(--fg); }
+.btn--primary { background: var(--fg); border-color: var(--fg); color: var(--bg); font-weight: 700; }
+.btn--primary:hover { background: var(--muted); border-color: var(--muted); }
+.btn--small { min-height: 26px; padding: 4px 9px; font-size: var(--fs-sm); }
+.btn:disabled, .btn[aria-disabled="true"] {
+  border-color: var(--line-soft); background: transparent; color: var(--muted); cursor: not-allowed;
+}
+
+.link-button {
+  border: 0; padding: 0; background: none; color: inherit; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px; font-weight: 500;
+}
+
+/* Fields: mono caps labels, plain inputs. */
+.field { display: grid; gap: 5px; font: 600 var(--fs-xs) / 1.2 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.field input, .field textarea, .field select {
+  width: 100%; min-width: 0; padding: 8px 10px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  font: 400 var(--fs-md) var(--font); letter-spacing: 0; text-transform: none;
+}
+.field textarea { resize: vertical; }
+.field .hint { font: 400 var(--fs-sm) var(--font); letter-spacing: 0; text-transform: none; color: var(--muted); }
+.field--error input, .field--error textarea, .field--error select { border-color: var(--red); }
+.error-text {
+  display: block; color: var(--red);
+  font: 500 var(--fs-sm) / 1.4 var(--font); letter-spacing: 0; text-transform: none;
+}
+
+/* Tally lights: the lamp carries the verdict, the mono label names it. */
+.tally {
+  display: inline-flex; align-items: center; gap: 7px;
+  font: 600 var(--fs-xs) / 1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  white-space: nowrap; color: var(--fg);
+}
+.tally::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--muted); }
+.tally--supported::before { background: var(--green); box-shadow: none; }
+.tally--not_supported::before { background: var(--red); box-shadow: none; }
+.tally--insufficient_evidence::before { box-shadow: inset 0 0 0 2.5px var(--amber); }
+.tally--failed::before { background: var(--amber); box-shadow: none; }
+.tally--pending, .tally--unverified, .tally--skipped { color: var(--muted); }
+.tally--large { font-size: var(--fs-sm); padding: 6px 10px; border: 1px solid var(--line); background: var(--surface); }
+
+.skeleton { display: grid; gap: 8px; }
+.skeleton i { display: block; height: 11px; background: var(--line-soft); animation: pulse 1.6s ease-in-out infinite; }
+.skeleton i:nth-child(2) { width: 82%; }
+.skeleton i:nth-child(3) { width: 64%; }
+@keyframes pulse { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) {
+  .skeleton i { animation: none; }
+}
+
+.plate { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); }
+.plate > div { display: grid; gap: 2px; padding: 7px 9px; background: var(--surface); min-width: 0; }
+.plate dt { font: 600 var(--fs-xs) var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.plate dd { font: 400 var(--fs-sm) / 1.3 var(--mono); overflow-wrap: anywhere; }
+.plate .wide { grid-column: 1 / -1; }
+
+kbd {
+  display: inline-block; min-width: 1.5em; padding: 1px 5px; text-align: center;
+  font: 600 var(--fs-xs) / 1.4 var(--mono);
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+}
+
+/* Burned-in timecode: cream on black, as a monitor overlay. */
+.burn {
+  font: 600 var(--fs-sm) / 1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: 0.03em;
+  color: var(--tc); background: var(--burn); padding: 4px 8px;
+}
+
+.meter { height: 6px; background: var(--sunk); }
+.meter > i { display: block; height: 100%; background: var(--fg); }

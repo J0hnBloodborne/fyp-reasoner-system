@@ -64,21 +64,30 @@ Open `http://127.0.0.1:8000` after `serve` to use TrafficSeek. The app has three
 "car driving against traffic at night", and narrow the results with the
 filters. Results show in two views:
 
-- **Timeline**: one strip per recording, with a marker at each event. The
-  marker shape gives the Tier-2 verdict: a green panel for supported, a white
-  plate for not supported, an amber diamond for insufficient evidence, and a
-  circle for not verified yet.
+- **Timeline**: one clip ruler per recording, with a block at each event. The
+  block's tally colour gives the Tier-2 verdict: green for supported, red for
+  not supported, an amber outline for insufficient evidence, and a grey outline
+  for not verified yet.
 - **Register**: a sortable table with the matching text from each record. It
   downloads as CSV.
 
-Select an event to open it in the monitor. Step through the frames Tier-2 saw
-with the arrow keys, or press Space to loop them. The inspector shows the
+Select an event to open it in the monitor. For videos uploaded to the app,
+the monitor plays the footage, paused on the trigger, with burned-in timecode
+and a clip ruler that marks the in and out points of the window Tier-2 saw.
+Switch to "Frames Tier-2 saw" to step through the exact evidence frames. The
+arrow keys step one frame, Home and End jump to the in and out points, and
+Space plays or pauses. The inspector shows the
 verdict and the frame-by-frame observations, the Tier-1 detector data, the raw
 model output and the custody log. Record a named decision on the Review tab.
 Each event has its own link, `/incident/<record id>`. Press `?` for all keys.
 
-**Import** takes a Tier-1 bundle (see below). Every event is queued for Tier-2
-verification, and the status bar shows the queue.
+**Add footage** takes a video (MP4, MOV, AVI, MKV or WebM, up to 2 GB). The
+GPU worker makes a 720p preview copy (when `ffmpeg` is on PATH), runs the
+Tier-1 detector on every frame, imports the events in bundles of at most 100,
+and queues each for Tier-2. One video is processed at a time; a 35-second,
+60 fps clip takes about two minutes on an RTX 3070. The same screen still
+imports Tier-1 bundles made elsewhere (see below). Uploaded videos stay in
+`data/videos/`.
 
 **Analyze an image** checks one JPEG, PNG or WebP still (at most 12 MiB /
 24 MP) for riders without helmets and triple riding. Location and capture time

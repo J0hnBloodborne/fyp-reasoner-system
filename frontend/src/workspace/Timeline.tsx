@@ -32,9 +32,10 @@ function Track({ recording, selectedId, onSelect }: {
     <div className={`track${selected ? " track--active" : ""}`} role="group" aria-label={`${recording.name}, ${events.length} events`}>
       <div className="track__head">
         <b title={recording.name}>{recording.name}</b>
+        {recording.videoId && <span className="track__video">FOOTAGE</span>}
         <span className="mono">
           {[recording.camera, seconds && duration(seconds), fps && fpsLabel(fps)].filter(Boolean).join(" · ")}
-          {recording.sharedName && recording.bundleId && ` · bundle ${recording.bundleId.slice(0, 6)}`}
+          {recording.sharedName && !recording.videoId && recording.bundleId && ` · bundle ${recording.bundleId.slice(0, 6)}`}
         </span>
         <span className="track__tally">{events.length} {events.length === 1 ? "event" : "events"}{tally && ` · ${tally}`}</span>
       </div>

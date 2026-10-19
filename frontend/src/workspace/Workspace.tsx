@@ -4,20 +4,18 @@ import { eventTitle } from "../format";
 import { eventElement, isTyping, useInterval, useStoredString } from "../hooks";
 import { Link, navigate, useTitle } from "../router";
 import { Inspector } from "./Inspector";
-import { Monitor, sortedFrames } from "./Monitor";
+import { Monitor, type Deck, type MonitorMode } from "./Monitor";
 import { groupResults } from "./recordings";
 import { Register, sortRows, toCSV, type Sort } from "./Register";
 import { SearchBar } from "./SearchBar";
 import { Legend, Timeline } from "./Timeline";
 import "./Workspace.css";
 
-const PLAY_INTERVAL_MS = 250;
-
 function downloadCSV(rows: RecordSummary[]) {
   const url = URL.createObjectURL(new Blob([toCSV(rows)], { type: "text/csv" }));
   const link = document.createElement("a");
   link.href = url;
-  link.download = `traffic-search-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.download = `trafficseek-${new Date().toISOString().slice(0, 10)}.csv`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -31,8 +29,8 @@ export function Workspace({ selectedId, params }: { selectedId: string | null; p
   const [sort, setSort] = useState<Sort | null>(null);
   const [record, setRecord] = useState<RecordDetail | null>(null);
   const [recordError, setRecordError] = useState<string | null>(null);
-  const [frame, setFrame] = useState<number | null>(null);
-  const [playing, setPlaying] = useState(false);
+  const [mode, setMode] = useStoredString("traffic-monitor-mode", "footage");
+  const deck = useRef<Deck | null>(null);
 
   // Responses for an older search or selection are dropped.
   const latest = useRef({ query, selectedId });
@@ -68,8 +66,6 @@ export function Workspace({ selectedId, params }: { selectedId: string | null; p
   useEffect(() => {
     setRecord(null);
     setRecordError(null);
-    setFrame(null);
-    setPlaying(false);
     if (selectedId) loadRecord(selectedId);
   }, [selectedId]);
   useInterval(() => selectedId && loadRecord(selectedId), 2000, !!record && isPending(record));
@@ -80,7 +76,7 @@ export function Workspace({ selectedId, params }: { selectedId: string | null; p
     [view, results, sort, recordings, stills],
   );
   const index = ordered.findIndex((item) => item.id === selectedId);
-  const frames = sortedFrames(record);
+  const siblings = recordings.find((item) => item.events.some((event) => event.id === selectedId))?.events ?? [];
 
   function open(id: string) {
     navigate(`/incident/${id}${query ? `?${query}` : ""}`);
@@ -90,20 +86,11 @@ export function Workspace({ selectedId, params }: { selectedId: string | null; p
     const next = index === -1 ? (offset > 0 ? 0 : ordered.length - 1) : index + offset;
     if (next >= 0 && next < ordered.length) open(ordered[next].id);
   }
-  function stepFrame(offset: number) {
-    if (!frames.length || !record?.tier1_event) return;
-    const current = frames.findIndex((item) => item.frame_index === (frame ?? record.tier1_event!.trigger_frame));
-    const next = frames[Math.min(frames.length - 1, Math.max(0, current + offset))];
-    setPlaying(false);
-    setFrame(next.frame_index);
+  /** Observation chips show their frame in the Frames view, which holds every cited frame. */
+  function showFrame(frame: number) {
+    setMode("frames");
+    requestAnimationFrame(() => deck.current?.goTo(frame));
   }
-
-  // Play loops through the evidence window slowly enough to follow motion.
-  useInterval(() => {
-    if (!frames.length || !record?.tier1_event) return;
-    const current = frames.findIndex((item) => item.frame_index === (frame ?? record.tier1_event!.trigger_frame));
-    setFrame(frames[(current + 1) % frames.length].frame_index);
-  }, PLAY_INTERVAL_MS, playing && frames.length > 1);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -118,12 +105,12 @@ export function Workspace({ selectedId, params }: { selectedId: string | null; p
       const actions: Record<string, () => void> = {
         ArrowDown: () => step(1),
         ArrowUp: () => step(-1),
-        ArrowRight: () => stepFrame(1),
-        ArrowLeft: () => stepFrame(-1),
-        Home: () => stepFrame(-Infinity),
-        End: () => stepFrame(Infinity),
-        " ": () => frames.length > 1 && setPlaying((value) => !value),
-        t: () => record?.tier1_event && (setPlaying(false), setFrame(record.tier1_event.trigger_frame)),
+        ArrowRight: () => deck.current?.step(1),
+        ArrowLeft: () => deck.current?.step(-1),
+        Home: () => deck.current?.toIn(),
+        End: () => deck.current?.toOut(),
+        " ": () => deck.current?.toggle(),
+        t: () => deck.current?.toTrigger(),
       };
       const action = actions[event.key];
       if (!action) return;
@@ -195,17 +182,18 @@ export function Workspace({ selectedId, params }: { selectedId: string | null; p
           record={record}
           loading={!!selectedId && !record}
           error={recordError}
-          frame={frame}
-          onFrame={(next) => { setPlaying(false); setFrame(next); }}
-          playing={playing}
-          onPlaying={setPlaying}
+          siblings={siblings}
+          mode={mode as MonitorMode}
+          onMode={setMode}
+          deck={deck}
+          onOpen={open}
           position={index === -1 ? null : { index, total: ordered.length }}
           onStep={step}
           emptyText={emptyText}
         />
       </div>
       <div className="workspace__inspector">
-        <Inspector record={record} loading={!!selectedId && !record && !recordError} onFrame={(next) => { setPlaying(false); setFrame(next); }}
+        <Inspector record={record} loading={!!selectedId && !record && !recordError} onFrame={showFrame}
           onRecord={(next) => { setRecord(next); loadResults(); }} />
       </div>
       <section className="workspace__bin bin" aria-label="Results">

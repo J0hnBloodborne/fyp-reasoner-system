@@ -5,6 +5,7 @@ import { markOf, type Mark } from "../format";
 export interface Recording {
   key: string;
   bundleId: string | null;
+  videoId: string | null;
   name: string;
   camera: string | null;
   frameCount: number;
@@ -23,12 +24,14 @@ export function groupResults(results: RecordSummary[]) {
       stills.push(result);
       continue;
     }
-    const key = result.bundle_id ?? result.source_video ?? "unknown";
+    // A video uploaded to the app can span several bundles of 100 events.
+    const key = result.video_id ?? result.bundle_id ?? result.source_video ?? "unknown";
     let recording = recordings.get(key);
     if (!recording) {
       recording = {
         key,
         bundleId: result.bundle_id,
+        videoId: result.video_id,
         name: result.source_video ?? "Unnamed video",
         camera: result.camera_type,
         frameCount: result.frame_count ?? 0,

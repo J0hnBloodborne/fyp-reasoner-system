@@ -238,7 +238,7 @@ class Handler(BaseHTTPRequestHandler):
             self._json(404, {"error": "Record or evidence not found"})
         except ValueError as exc:
             self._json(400, {"error": str(exc)})
-        except (BrokenPipeError, ConnectionResetError):
+        except ConnectionError:  # The client left before the response.
             return
 
     def do_POST(self) -> None:
@@ -279,6 +279,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(400, {"error": str(exc)})
         except KeyError:
             self._json(404, {"error": "Record not found"})
+        except ConnectionError:  # The client left; the work itself is done.
+            return
         except Exception:
             logger.exception("Request failed")
             self._json(500, {"error": "Internal error; see application log"})

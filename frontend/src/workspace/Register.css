@@ -1,0 +1,26 @@
+.register table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.register th {
+  position: sticky; top: 0; z-index: 1; padding: 0; text-align: left;
+  background: var(--panel); border-bottom: 2px solid var(--fg);
+}
+.register th button {
+  display: flex; align-items: center; gap: 4px; width: 100%; padding: 7px 10px;
+  border: 0; background: none; cursor: pointer;
+  font: 700 var(--fs-xs) / 1 var(--font); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+}
+.register th button:hover { color: var(--fg); }
+.register th[aria-sort] button { color: var(--fg); }
+.register__arrow { font-size: 8px; }
+.register td { padding: 6px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.register tbody tr { cursor: pointer; }
+.register tbody tr:hover { background: var(--sunk); }
+.register tbody tr[aria-selected="true"] { background: var(--blue-wash); }
+.register tbody tr[aria-selected="true"] .register__open { color: var(--blue); }
+.register__open { padding: 0; border: 0; background: none; font-weight: 700; text-align: left; cursor: pointer; }
+.register__snippet { display: block; max-width: 52ch; margin-top: 2px; color: var(--muted); font-size: var(--fs-xs); }
+.register__snippet mark { background: none; color: var(--fg); font-weight: 700; text-decoration: underline; text-decoration-color: var(--fg); text-decoration-thickness: 2px; }
+
+@media (max-width: 700px) {
+  .register { overflow-x: auto; }
+  .register table { min-width: 720px; }
+}

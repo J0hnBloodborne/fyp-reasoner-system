@@ -1,0 +1,76 @@
+/* Each recording is a route strip: a road with mileposts in seconds and a
+   sign-shaped marker at every event. The selected event carries the blue
+   playhead, as in an editing timeline. */
+.timeline { display: grid; align-content: start; }
+
+.track {
+  display: grid; grid-template-columns: minmax(0, 230px) minmax(0, 1fr); align-items: center;
+  border-bottom: 1px solid var(--line-soft);
+}
+.track--active { background: color-mix(in srgb, var(--blue-wash) 45%, transparent); }
+.track__head {
+  display: grid; gap: 1px; align-self: stretch; align-content: center;
+  padding: 8px 14px; border-right: 1px solid var(--line-soft); min-width: 0;
+}
+.track__head b { font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track__head .mono { font-size: var(--fs-xs); color: var(--muted); }
+.track__tally { font-size: var(--fs-xs); color: var(--muted); }
+
+.track__lane { position: relative; height: 54px; margin: 0 22px; }
+.track__road { position: absolute; left: 0; right: 0; top: 26px; height: 4px; background: var(--fg); }
+.track__post {
+  position: absolute; top: 36px; transform: translateX(-50%);
+  font: 400 var(--fs-xs) / 1 var(--mono); color: var(--muted);
+}
+.track__post::before { content: ""; position: absolute; left: 50%; top: -6px; width: 1px; height: 5px; background: var(--fg); }
+
+/* Markers */
+.mk {
+  position: absolute; top: 16px; width: 14px; height: 18px; margin-left: -7px; padding: 0;
+  border: 0; background: var(--panel); cursor: pointer;
+}
+.mk::before { content: ""; position: absolute; inset: -5px -3px; }
+.mk--supported { background: var(--green); box-shadow: inset 0 0 0 2px var(--green), inset 0 0 0 3.5px var(--green-ink); }
+.mk--not_supported { background: var(--plate); box-shadow: inset 0 0 0 2px var(--plate-ink); }
+.mk--insufficient_evidence {
+  top: 19px; width: 13px; height: 13px; margin-left: -6.5px;
+  background: var(--amber); box-shadow: inset 0 0 0 2px var(--amber-ink); transform: rotate(45deg);
+}
+.mk--pending, .mk--failed, .mk--skipped, .mk--unverified {
+  top: 22px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%;
+  background: var(--panel); box-shadow: inset 0 0 0 2px var(--fg);
+}
+.mk--failed { box-shadow: inset 0 0 0 2px var(--amber-ink), inset 0 0 0 6px var(--amber); }
+.mk:hover { z-index: 3; outline: 2px solid var(--fg); outline-offset: 2px; }
+.mk[aria-pressed="true"] { z-index: 4; outline: 3px solid var(--blue); outline-offset: 3px; }
+.mk:focus-visible { z-index: 5; }
+
+.playhead { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--blue); z-index: 2; pointer-events: none; }
+.playhead__flag {
+  position: absolute; top: -1px; left: 4px; padding: 2px 5px;
+  background: var(--blue); color: var(--blue-ink);
+  font: 600 10px / 1.1 var(--mono); white-space: nowrap;
+}
+
+/* Uploaded stills */
+.track--stills .stills { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 22px; }
+.still {
+  display: grid; gap: 3px; width: 80px; padding: 0; border: 0; background: none; cursor: pointer;
+  text-align: left; font-size: var(--fs-xs); color: var(--muted);
+}
+.still img { width: 80px; height: 45px; object-fit: cover; background: var(--monitor); border: 1px solid var(--line); }
+.still:hover img { outline: 2px solid var(--fg); }
+.still[aria-pressed="true"] img { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+/* Legend */
+.legend { display: inline-flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--fs-xs); color: var(--muted); }
+.legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.legend .mk { position: relative; top: 0; margin: 0; width: 10px; height: 13px; cursor: default; }
+.legend .mk--insufficient_evidence { width: 9px; height: 9px; margin: 0 1px; }
+.legend .mk--unverified { width: 10px; height: 10px; }
+
+@media (max-width: 700px) {
+  .track { grid-template-columns: minmax(0, 1fr); }
+  .track__head { border-right: 0; padding-bottom: 0; }
+  .track__lane { margin: 0 16px; }
+}

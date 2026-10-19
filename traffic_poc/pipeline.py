@@ -7,14 +7,20 @@ import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 
-from traffic_poc.config import Settings
+from traffic_poc.config import ROOT, Settings
 from traffic_poc.contract import Contract
+from traffic_poc.detection.bundle import MAX_EVENTS, import_bundle
+from traffic_poc.detection.detector import Detector
+from traffic_poc.detection.export_bundle import export_bundle
+from traffic_poc.detection.video import detect, extract_frames, make_preview
 from traffic_poc.lease import RuntimeLease
 from traffic_poc.records.evidence import ingest_image
-from traffic_poc.records.store import Repository, now
+from traffic_poc.records.store import VIDEO_ACTIVE, Repository, now
 from traffic_poc.vlm.model import Reasoner
 from traffic_poc.vlm.outputs import parse_analysis, parse_verification
 from traffic_poc.vlm.prompts import (
@@ -32,6 +38,14 @@ class Submission(Contract):
     filename: str = Field(default="image", min_length=1, max_length=200)
     location: str | None = Field(default=None, max_length=200)
     captured_at: str | None = Field(default=None, max_length=100)
+
+
+class VideoUpload(Contract):
+    """Options for running Tier-1 detection on an uploaded video."""
+
+    filename: str = Field(min_length=1, max_length=200)
+    camera_type: Literal["CCTV", "DASHCAM"] = "CCTV"
+    allowed_direction: Literal[-1, 1] = -1
 
 
 class PipelineBusy(Exception):
@@ -212,6 +226,103 @@ class Pipeline:
             finished_at=now(), total_seconds=round(time.perf_counter() - started, 3)
         )
         self.repository.update(record_id, verification=verification)
+
+    def submit_video(self, path: Path, upload: VideoUpload) -> str:
+        """Queue Tier-1 detection for a video already saved under data/videos.
+
+        It shares the single GPU worker with verification, so detection and
+        the VLM never compete for memory. One video is processed at a time.
+        """
+        with self.lifecycle_lock:
+            if self.closed:
+                raise PipelineBusy("Application is shutting down")
+            if any(
+                video["status"] in VIDEO_ACTIVE
+                for video in self.repository.list_videos()
+            ):
+                raise PipelineBusy("Another video is still being processed")
+            video_id = path.stem
+            self.repository.create_video(
+                {
+                    "id": video_id,
+                    "created_at": now(),
+                    "status": "queued",
+                    "filename": upload.filename,
+                    "file": path.name,
+                    "preview": None,
+                    "camera_type": upload.camera_type,
+                    "allowed_direction": upload.allowed_direction,
+                    "progress": None,
+                    "fps": None,
+                    "frame_count": None,
+                    "event_count": None,
+                    "record_ids": [],
+                    "error": None,
+                }
+            )
+            self.executor.submit(self._process_video, video_id, upload)
+            return video_id
+
+    def _process_video(self, video_id: str, upload: VideoUpload) -> None:
+        """Preview, frames, detection, bundles of at most 100 events, import."""
+        update = self.repository.update_video
+        directory = self.settings.data_dir / "videos"
+        source = directory / self.repository.get_video(video_id)["file"]
+
+        def progress(stage: str):
+            return lambda done, total: update(
+                video_id, progress={"stage": stage, "done": done, "total": total}
+            )
+
+        try:
+            update(video_id, status="preview", started_at=now())
+            preview = directory / f"{video_id}.preview.mp4"
+            if make_preview(source, preview):
+                update(video_id, preview=preview.name)
+            update(video_id, status="extracting")
+            frames, fps = extract_frames(
+                source,
+                self.settings.data_dir / "tier1_frames" / video_id,
+                progress("extracting"),
+            )
+            update(video_id, status="detecting", fps=fps, frame_count=len(frames))
+            violations = detect(
+                frames,
+                Detector(upload.camera_type, upload.allowed_direction),
+                ROOT / "models" / "yolo26x.pt",
+                progress("detecting"),
+            )
+            update(video_id, status="importing", event_count=len(violations))
+            ids = []
+            for start in range(0, len(violations), MAX_EVENTS):
+                bundle = directory / f"{video_id}.tier1-{start // MAX_EVENTS + 1}.zip"
+                export_bundle(
+                    violations[start : start + MAX_EVENTS],
+                    frames,
+                    upload.filename,
+                    upload.camera_type,
+                    bundle,
+                    fps=fps,
+                )
+                ids += import_bundle(bundle, self.settings, self.repository, video_id)
+            update(
+                video_id,
+                status="completed",
+                record_ids=ids,
+                progress=None,
+                finished_at=now(),
+            )
+        except Exception as exc:
+            logger.exception("Video %s failed", video_id)
+            update(
+                video_id,
+                status="failed",
+                error=f"{type(exc).__name__}: {exc}",
+                finished_at=now(),
+            )
+            return
+        for record_id in ids:
+            self.verify(record_id)
 
     def close(self) -> None:
         """Drain already accepted jobs on a normal shutdown."""

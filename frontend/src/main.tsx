@@ -1,9 +1,8 @@
-import "@fontsource/overpass/latin-400.css";
-import "@fontsource/overpass/latin-600.css";
-import "@fontsource/overpass/latin-700.css";
-import "@fontsource/overpass/latin-800.css";
-import "@fontsource/overpass-mono/latin-400.css";
-import "@fontsource/overpass-mono/latin-600.css";
+import "@fontsource/red-hat-text/latin-400.css";
+import "@fontsource/red-hat-text/latin-500.css";
+import "@fontsource/red-hat-text/latin-700.css";
+import "@fontsource/red-hat-mono/latin-400.css";
+import "@fontsource/red-hat-mono/latin-600.css";
 import "./styles/tokens.css";
 import "./styles/base.css";
 

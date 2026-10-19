@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import type { RecordSummary } from "../api";
-import { Sign } from "../components/Sign";
+import { Tally } from "../components/Tally";
 import { dateTime, eventTitle, frameSeconds, markOf, OUTCOME_LABEL, timecode, type Mark } from "../format";
 import "./Register.css";
 
@@ -94,7 +94,7 @@ export function Register({ rows, sort, onSort, selectedId, onSelect, ranked }: {
               <td>{row.camera_type ?? <span className="muted">None</span>}</td>
               <td>
                 {row.source === "tier1_bundle"
-                  ? <Sign mark={markOf(row)} status={row.verification_status} />
+                  ? <Tally mark={markOf(row)} status={row.verification_status} />
                   : <span className="muted">{row.outcome ? OUTCOME_LABEL[row.outcome] : row.status}</span>}
               </td>
               <td className={row.decision ? "" : "muted"}>{row.decision ? row.decision[0].toUpperCase() + row.decision.slice(1) : "Unreviewed"}</td>

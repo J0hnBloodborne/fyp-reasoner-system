@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { files, type Frame, type RecordDetail } from "../api";
-import { Sign } from "../components/Sign";
+import { Tally } from "../components/Tally";
 import { duration, fpsLabel, markOf, OUTCOME_LABEL, timecode, typeLabel } from "../format";
 import "./Monitor.css";
 
@@ -122,7 +122,7 @@ function Tier1View(props: MonitorProps & { record: RecordDetail }) {
           <h1>{event.trigger_type}</h1>
           <p className="mono">{[event.source_video, event.camera_type, `track ${event.target_id}`, event.fps && fpsLabel(event.fps)].filter(Boolean).join(" · ")}</p>
         </div>
-        <Sign mark={mark} status={record.verification?.status} large />
+        <Tally mark={mark} status={record.verification?.status} large />
         <EventNav position={props.position} onStep={props.onStep} />
       </header>
       <Screen ratio={shown ? shown.width / shown.height : 16 / 9}>

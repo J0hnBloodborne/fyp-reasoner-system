@@ -8,8 +8,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@fontsource/overpass": "^5.3.0",
-    "@fontsource/overpass-mono": "^5.3.0",
+    "@fontsource/red-hat-mono": "^5.3.0",
+    "@fontsource/red-hat-text": "^5.3.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

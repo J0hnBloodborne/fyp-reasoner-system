@@ -1,72 +1,62 @@
-/* Guide Sign palette: U.S. highway sign colours (MUTCD guide green, warning
-   amber, regulatory white plate, services blue) over concrete greys.
-   Blue marks the current position everywhere: playhead, selection, focus.
-   Amber marks warnings only. Monitors stay dark in both themes so footage
-   is judged against the same neutral surround. */
+/* Edit Bay palette: light grey editing-suite chrome around a dark viewer.
+   Verdicts are tally lights: preview green for supported, program red for
+   not supported, hold amber for insufficient evidence. Timecode is burned in
+   cream on black, as on a broadcast monitor. The viewer stays dark in both
+   themes so footage is judged against the same surround. */
 :root {
-  --bg: #e4e7e1;
-  --panel: #edf0ea;
-  --surface: #f6f7f3;
-  --sunk: #d8ddd5;
-  --fg: #101512;
-  --muted: #4a544d;
-  --line: #a9b3aa;
-  --line-soft: #c9cfc7;
+  --bg: #d8dadf;
+  --panel: #e7e8ec;
+  --surface: #f1f2f4;
+  --sunk: #cbced4;
+  --fg: #16181c;
+  --muted: #555a63;
+  --line: #a3a7af;
+  --line-soft: #c3c6cc;
 
-  --green: #0a5a39;
-  --green-ink: #f5f7f2;
-  --amber: #e8a317;
-  --amber-ink: #1c1405;
-  --plate: #f7f8f4;
-  --plate-ink: #101512;
-  --blue: #1d4f91;
-  --blue-ink: #f3f6fb;
-  --blue-wash: rgb(29 79 145 / 0.13);
-  --red: #b3141f;
-  --red-ink: #f7f8f4;
+  --viewer: #23262b;
+  --viewer-ink: #c9ccd2;
+  --viewer-line: #3a3e45;
+  --tc: #f3ead0;
+  --burn: #0b0c0e;
 
-  --monitor: #0e1210;
-  --monitor-ink: #c9d0ca;
-  --monitor-line: #2c342e;
+  --green: #2f7d4f;
+  --red: #c4302b;
+  --amber: #b07d0a;
+  --ink-on-color: #ffffff;
+  --wash: rgb(22 24 28 / 0.08);
 
-  --font: "Overpass", "Segoe UI", system-ui, sans-serif;
-  --mono: "Overpass Mono", Consolas, "Courier New", monospace;
+  --font: "Red Hat Text", "Segoe UI", system-ui, sans-serif;
+  --mono: "Red Hat Mono", Consolas, "Courier New", monospace;
 
   --fs-xs: 0.6875rem;
   --fs-sm: 0.78rem;
   --fs-md: 0.875rem;
   --fs-lg: 1rem;
   --fs-xl: 1.3rem;
-  --fs-2xl: 1.75rem;
+  --fs-2xl: 1.65rem;
 
-  --bar-h: 46px;
+  --bar-h: 44px;
   --status-h: 30px;
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --bg: #131815;
-  --panel: #181e1a;
-  --surface: #1f2621;
-  --sunk: #0f1311;
-  --fg: #e6eae4;
-  --muted: #9ba59e;
-  --line: #3a453e;
-  --line-soft: #2a322d;
+  --bg: #1a1c20;
+  --panel: #22252a;
+  --surface: #2a2d33;
+  --sunk: #141619;
+  --fg: #e3e5e9;
+  --muted: #99a0aa;
+  --line: #41454c;
+  --line-soft: #31343a;
 
-  --green: #1d7a50;
-  --green-ink: #f3f6f0;
-  --amber: #eaad2c;
-  --amber-ink: #1c1405;
-  --plate: #e6eae4;
-  --plate-ink: #101512;
-  --blue: #7aa7e6;
-  --blue-ink: #0b1424;
-  --blue-wash: rgb(122 167 230 / 0.16);
-  --red: #c42a2f;
-  --red-ink: #f7f8f4;
+  --viewer: #0e1013;
+  --viewer-line: #2a2d33;
 
-  --monitor: #090b0a;
-  --monitor-line: #232a25;
+  --green: #48a46c;
+  --red: #e0483f;
+  --amber: #d9a72b;
+  --ink-on-color: #0e1013;
+  --wash: rgb(227 229 233 / 0.08);
   color-scheme: dark;
 }

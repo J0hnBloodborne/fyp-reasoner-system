@@ -16,8 +16,11 @@ def tier1(record_id, created_at, trigger, camera, verdict, observation):
         "status": "awaiting_review",
         "source": "tier1_bundle",
         "tier1_event": {
+            "bundle_id": "b" * 32,
             "trigger_type": trigger,
             "source_video": "v41.mov",
+            "frame_count": 2125,
+            "fps": 59.69,
             "camera_type": camera,
             "target_id": "ID 8",
             "trigger_frame": 120,
@@ -93,7 +96,11 @@ def test_no_query_lists_newest_first_with_summaries(repository):
     assert ids(results) == ["crash", "upload", "wrongway"]
     assert results[2]["types"] == ["Wrong-Way Driving"]
     assert results[2]["verdict"] == "supported"
+    assert results[2]["bundle_id"] == "b" * 32
+    assert (results[2]["frame_count"], results[2]["fps"]) == (2125, 59.69)
+    assert results[2]["target_id"] == "ID 8"
     assert results[1]["types"] == ["no_helmet"]
+    assert results[1]["bundle_id"] is None
     assert results[1]["outcome"] == "candidate_violation"
 
 

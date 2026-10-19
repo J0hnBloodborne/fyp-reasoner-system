@@ -1,0 +1,21 @@
+/* The top bar reads as a guide sign: green panel, white legend, inset border. */
+.topbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 22px;
+  min-height: var(--bar-h); padding: 6px 16px;
+  background: var(--green); color: var(--green-ink);
+  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--green-ink) 80%, transparent);
+}
+.topbar a { text-decoration: none; }
+.topbar__brand { font-weight: 800; font-size: 1.08rem; letter-spacing: 0.005em; }
+.topbar__nav { display: flex; gap: 18px; font-weight: 600; font-size: var(--fs-md); }
+.topbar__nav a { padding: 4px 0 2px; border-bottom: 3px solid transparent; }
+.topbar__nav a[aria-current="page"] { border-bottom-color: var(--green-ink); }
+.topbar__nav a:hover { border-bottom-color: color-mix(in srgb, var(--green-ink) 55%, transparent); }
+.topbar__end { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.topbar__secondary, .topbar__theme {
+  padding: 5px 10px; border: 2px solid var(--green-ink); background: transparent; color: var(--green-ink);
+  font-weight: 700; font-size: var(--fs-sm); line-height: 1.2; cursor: pointer;
+}
+.topbar__secondary:hover, .topbar__theme:hover, .topbar__secondary[aria-current="page"] { background: var(--green-ink); color: var(--green); }
+.topbar__theme { border-color: color-mix(in srgb, var(--green-ink) 55%, transparent); }
+.topbar :focus-visible { outline-color: var(--green-ink); }

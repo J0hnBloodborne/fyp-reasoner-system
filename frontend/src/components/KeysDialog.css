@@ -1,0 +1,9 @@
+.keys {
+  width: min(440px, calc(100vw - 32px)); padding: 20px;
+  border: 2px solid var(--fg); background: var(--panel); color: var(--fg);
+}
+.keys::backdrop { background: rgb(8 10 9 / 0.55); }
+.keys h2 { font-size: var(--fs-xl); font-weight: 800; margin-bottom: 4px; }
+.keys dl { display: grid; margin: 14px 0 18px; border-top: 1px solid var(--line-soft); }
+.keys dl > div { display: grid; grid-template-columns: 90px 1fr; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+.keys dt { display: flex; gap: 4px; }

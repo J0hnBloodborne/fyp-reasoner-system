@@ -19,6 +19,17 @@ from traffic_poc.records.report import build_report
 from traffic_poc.records.reviews import Review
 
 STATIC = Path(__file__).parent / "static"
+# Client-side routes of the single-page app; each serves index.html.
+APP_ROUTE = re.compile(r"/(?:import|analyze|privacy|incident/[a-f0-9]{32})?")
+# Built assets: a flat name in static/ or static/assets/, never a nested path.
+STATIC_FILE = re.compile(r"/((?:assets/)?[A-Za-z0-9][A-Za-z0-9._-]*)")
+CONTENT_TYPES = {
+    ".js": "text/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".svg": "image/svg+xml",
+    ".woff2": "font/woff2",
+    ".woff": "font/woff",
+}
 RECORD_ROUTE = re.compile(
     r"/api/records/([a-f0-9]{32})(?:/(image|original|export|report|review|verify))?"
 )
@@ -104,6 +115,12 @@ class Handler(BaseHTTPRequestHandler):
             "application/json; charset=utf-8",
         )
 
+    def _page(self, status: int) -> None:
+        """Serve the app shell; the app renders the route, including not found."""
+        self._send(
+            status, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8"
+        )
+
     def _body(self) -> dict:
         if self.headers.get("Content-Type", "").split(";")[0] != "application/json":
             raise ValueError("Content-Type must be application/json")
@@ -162,14 +179,8 @@ class Handler(BaseHTTPRequestHandler):
         path = url.path
         pipeline = self.server.pipeline
         try:
-            assets = {
-                "/": ("index.html", "text/html; charset=utf-8"),
-                "/app.js": ("app.js", "text/javascript; charset=utf-8"),
-                "/style.css": ("style.css", "text/css; charset=utf-8"),
-            }
-            if path in assets:
-                filename, content_type = assets[path]
-                self._send(200, (STATIC / filename).read_bytes(), content_type)
+            if APP_ROUTE.fullmatch(path):
+                self._page(200)
             elif path == "/api/health":
                 self._json(
                     200,
@@ -232,8 +243,16 @@ class Handler(BaseHTTPRequestHandler):
                     self._json(200, record)
                 else:
                     self._json(404, {"error": "Not found"})
-            else:
+            elif path.startswith("/api/"):
                 self._json(404, {"error": "Not found"})
+            elif (
+                (match := STATIC_FILE.fullmatch(path))
+                and (file := STATIC / match.group(1)).suffix in CONTENT_TYPES
+                and file.is_file()
+            ):
+                self._send(200, file.read_bytes(), CONTENT_TYPES[file.suffix])
+            else:
+                self._page(404)
         except (KeyError, FileNotFoundError):
             self._json(404, {"error": "Record or evidence not found"})
         except ValueError as exc:
